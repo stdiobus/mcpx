@@ -57,12 +57,28 @@ flowchart TD
 
 ## Quick Start
 
+mcpx discovers modules inside a **Module Root** (`~/.ai/` by default, override with `MCPX_ROOT`).  
+Each module is a folder under `modules/` with a `module.json` manifest and an entry file.
+
+```
+~/.ai/                        ← Module Root
+└── modules/
+    └── my-module/            ← one module = one directory
+        ├── module.json       ← manifest: id, runtime, entry
+        └── server.ts         ← your MCP server code
+```
+
+### Minimal working example
+
 ```bash
-# 1. Install globally
+# 1. Install mcpx
 npm install -g @stdiobus/mcpx
 
-# 2. Create a module manifest
-cat > my-module/module.json << 'EOF'
+# 2. Create module directory
+mkdir -p ~/.ai/modules/my-module
+
+# 3. Create manifest
+cat > ~/.ai/modules/my-module/module.json << 'EOF'
 {
   "id": "my-module",
   "name": "My MCP Server",
@@ -71,9 +87,16 @@ cat > my-module/module.json << 'EOF'
 }
 EOF
 
-# 3. Run it
+# 4. Create entry file
+cat > ~/.ai/modules/my-module/server.ts << 'EOF'
+// your MCP server code here
+EOF
+
+# 5. Run
 mcpx run my-module
 ```
+
+> Use `MCPX_ROOT=/your/path mcpx run my-module` to point at a different root.
 
 ## Features
 
@@ -301,10 +324,10 @@ Contributions are welcome. Please open an issue first to discuss what you'd like
 
 ```bash
 git clone https://github.com/stdiobus/mcpx.git
-cd mcpx/packages/mcpx
-npm install
-npm run build
-npm test
+cd mcpx
+yarn install
+yarn run build
+yarn test
 ```
 
 ## License
