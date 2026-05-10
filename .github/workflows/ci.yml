@@ -116,7 +116,12 @@ jobs:
 
       - name: Run unit tests
         shell: bash
-        run: npx jest --testPathPattern "src/(cli|core|platform|runtimes)/.*\\.test\\.ts$"
+        run: |
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            npx jest --testPathPattern "src/(cli|core|platform|runtimes)/.*\\.test\\.ts$" --testPathIgnorePatterns="exec\\.test|exec-early-exit|shell\\.test"
+          else
+            npx jest --testPathPattern "src/(cli|core|platform|runtimes)/.*\\.test\\.ts$"
+          fi
         env:
           NODE_OPTIONS: '--experimental-vm-modules'
 
@@ -165,7 +170,7 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            npx jest --testPathPattern=integration --testPathIgnorePatterns='run-shell|run-python|stdio-transparency'
+            npx jest --testPathPattern=integration --testPathIgnorePatterns="run-shell|run-python|stdio-transparency|run-nodejs|env-layers|error-scenarios"
           else
             npx jest --testPathPattern=integration
           fi

@@ -88,6 +88,7 @@ function run(command, args, opts = {}) {
     input,
     timeout,
     maxBuffer: 10 * 1024 * 1024,
+    shell: true,
   });
   return {
     stdout: result.stdout?.toString('utf-8') ?? '',
