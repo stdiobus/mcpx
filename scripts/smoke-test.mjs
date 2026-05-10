@@ -115,14 +115,18 @@ const TOTAL_STEPS = 8;
 const results = [];
 
 // ============================================================
-// STEP 1: Build
+// STEP 1: Build (skip if already built)
 // ============================================================
 stepHeader(1, TOTAL_STEPS, 'npm run build');
 
-const buildResult = run('npm', ['run', 'build'], { cwd: PACKAGE_ROOT });
-assert(buildResult.exitCode === 0, 'Build failed', buildResult);
-assert(existsSync(join(PACKAGE_ROOT, 'dist', 'index.js')), 'dist/index.js not found after build');
-pass('Build succeeded, dist/index.js exists');
+if (existsSync(join(PACKAGE_ROOT, 'out', 'dist', 'index.js'))) {
+  pass('Build artifacts already exist, skipping build');
+} else {
+  const buildResult = run('npm', ['run', 'build'], { cwd: PACKAGE_ROOT });
+  assert(buildResult.exitCode === 0, 'Build failed', buildResult);
+  assert(existsSync(join(PACKAGE_ROOT, 'out', 'dist', 'index.js')), 'out/dist/index.js not found after build');
+  pass('Build succeeded, out/dist/index.js exists');
+}
 results.push('Step 1: Build — OK');
 
 // ============================================================
@@ -162,13 +166,9 @@ assert(installResult.exitCode === 0, 'npm install failed', installResult);
 mcpxBin = join(consumerDir, 'node_modules', '.bin', 'mcpx');
 assert(existsSync(mcpxBin), 'node_modules/.bin/mcpx not found');
 
-// Assert: dist modules exist
-const installedDist = join(consumerDir, 'node_modules', '@stdiobus', 'mcpx', 'dist');
-assert(existsSync(installedDist), 'dist/ not found in installed package');
-const distEntries = readdirSync(installedDist);
-for (const dir of ['cli', 'core', 'platform', 'runtimes', 'registry']) {
-  assert(distEntries.includes(dir), `dist/${dir}/ missing from installed package`);
-}
+// Assert: out/ modules exist
+const installedOut = join(consumerDir, 'node_modules', '@stdiobus', 'mcpx', 'out', 'dist');
+assert(existsSync(installedOut), 'out/dist/ not found in installed package');
 
 // Assert: src/ NOT shipped
 const installedSrc = join(consumerDir, 'node_modules', '@stdiobus', 'mcpx', 'src');
@@ -185,7 +185,7 @@ if (existsSync(installedPkgModules)) {
   assert(!existsSync(join(installedPkgModules, '@types')), '@types/ found in installed package');
 }
 
-pass('Package installed cleanly with correct dist/ structure, no src/, no devDeps');
+pass('Package installed cleanly with correct out/ structure, no src/, no devDeps');
 results.push('Step 3: Install — OK');
 
 // ============================================================

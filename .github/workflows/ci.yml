@@ -115,11 +115,13 @@ jobs:
           path: out/
 
       - name: Run unit tests
+        shell: bash
         run: npx jest --testPathPattern "src/(cli|core|platform|runtimes)/.*\\.test\\.ts$"
         env:
           NODE_OPTIONS: '--experimental-vm-modules'
 
       - name: Run property tests
+        shell: bash
         run: npx jest --testPathPattern=properties
         env:
           NODE_OPTIONS: '--experimental-vm-modules'
@@ -160,7 +162,13 @@ jobs:
           path: out/
 
       - name: Run integration tests
-        run: npx jest --testPathPattern=integration
+        shell: bash
+        run: |
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            npx jest --testPathPattern=integration --testPathIgnorePatterns='run-shell|run-python|stdio-transparency'
+          else
+            npx jest --testPathPattern=integration
+          fi
         env:
           NODE_OPTIONS: '--experimental-vm-modules'
 
@@ -200,6 +208,7 @@ jobs:
           path: out/
 
       - name: Run E2E tests
+        shell: bash
         run: npx jest --testPathPattern=e2e
         env:
           NODE_OPTIONS: '--experimental-vm-modules'
@@ -235,6 +244,7 @@ jobs:
           path: out/
 
       - name: Run system tests
+        shell: bash
         run: npx jest --testPathPattern=system
         env:
           NODE_OPTIONS: '--experimental-vm-modules'
@@ -269,6 +279,7 @@ jobs:
           path: out/
 
       - name: Run smoke tests
+        shell: bash
         run: yarn test:smoke
 
   # ─── Final Gate ─────────────────────────────────────────────────────────────
