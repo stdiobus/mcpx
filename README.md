@@ -1,4 +1,4 @@
-<h1 align="center" style="font-weight:500"><strong>@stdiobus/mcpx — Universal MCP Module Launcher</strong></h1>
+<h1 align="center" style="font-weight:500"><strong>Universal MCP Module Launcher</strong></h1>
 <p align="center">One command to run any MCP server module — in any language, on any platform. A manifest-driven launcher for <a href="https://stdiobus.com" target="_blank">stdio Bus</a> ecosystem that replaces hardcoded bash commands in <code>mcp.json</code> with a portable, runtime-agnostic <code>mcpx run &lt;module&gt;</code>.
 </p>
 
