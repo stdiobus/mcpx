@@ -36,6 +36,7 @@ pip-delete-this-directory.txt
 *.egg-info/
 .eggs/
 dist/
+out/
 build/
 *.egg
 .mypy_cache/

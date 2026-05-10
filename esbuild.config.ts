@@ -23,7 +23,7 @@ import { resolve } from 'node:path';
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const SRC_DIR = resolve(import.meta.dirname, 'src');
-const OUT_DIR = resolve(import.meta.dirname, 'dist');
+const OUT_DIR = resolve(import.meta.dirname, 'out', 'dist');
 const IS_WATCH = process.argv.includes('--watch');
 
 /**
@@ -75,8 +75,7 @@ const sharedOptions: BuildOptions = {
   bundle: true,
   platform: 'node',
   target: 'node18',
-  sourcemap: true,
-  sourcesContent: false,
+  sourcemap: false,
   treeShaking: true,
   minifySyntax: true,
   minifyWhitespace: false, // keep readable for debugging in production
@@ -141,8 +140,9 @@ const cliBuild: BuildOptions = {
 // ─── Build Execution ─────────────────────────────────────────────────────────
 
 async function cleanDist(): Promise<void> {
-  if (existsSync(OUT_DIR)) {
-    rmSync(OUT_DIR, { recursive: true, force: true });
+  const outRoot = resolve(import.meta.dirname, 'out');
+  if (existsSync(outRoot)) {
+    rmSync(outRoot, { recursive: true, force: true });
   }
 }
 

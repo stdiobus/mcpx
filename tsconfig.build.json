@@ -3,16 +3,17 @@
   "compilerOptions": {
     "emitDeclarationOnly": true,
     "declaration": true,
-    "declarationMap": true,
-    "declarationDir": "./dist",
+    "declarationMap": false,
     "sourceMap": false,
-    "outDir": "./dist"
+    "declarationDir": "./out/tsc",
+    "outDir": "./out/tsc"
   },
   "include": [
     "src/**/*.ts"
   ],
   "exclude": [
     "node_modules",
+    "out",
     "dist",
     "**/*.test.ts",
     "src/__tests__/**"

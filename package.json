@@ -6,24 +6,24 @@
   "bin": {
     "mcpx": "bin/mcpx"
   },
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./out/dist/index.js",
+  "module": "./out/dist/index.js",
+  "types": "./out/tsc/index.d.ts",
   "exports": {
     ".": {
       "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
+        "types": "./out/tsc/index.d.ts",
+        "default": "./out/dist/index.js"
       },
       "require": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.cjs"
+        "types": "./out/tsc/index.d.ts",
+        "default": "./out/dist/index.cjs"
       }
     }
   },
   "scripts": {
     "build": "npm run build:clean && npm run build:bundle && npm run build:types",
-    "build:clean": "rm -rf dist",
+    "build:clean": "rm -rf out",
     "build:bundle": "tsx esbuild.config.ts",
     "build:types": "tsc --project tsconfig.build.json",
     "build:watch": "tsx esbuild.config.ts --watch",
@@ -59,7 +59,7 @@
     "node": ">=18.0.0"
   },
   "files": [
-    "dist/",
+    "out/",
     "bin/"
   ],
   "devDependencies": {
