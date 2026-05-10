@@ -38,7 +38,7 @@ const __dirname = dirname(__filename);
 const PACKAGE_ROOT = resolve(__dirname, '../../..');
 
 /** Path to the dist directory */
-const DIST_DIR = resolve(PACKAGE_ROOT, 'dist');
+const DIST_DIR = resolve(PACKAGE_ROOT, 'out/dist');
 
 /** Expected tarball filename based on package.json name and version */
 const TARBALL_NAME = 'stdiobus-mcpx-0.1.0.tgz';

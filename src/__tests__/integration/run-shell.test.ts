@@ -42,7 +42,7 @@ const SHELL_RUNNER = resolve(__dirname, '../helpers/mcpx-runner.mjs');
 /**
  * Path to the dist directory containing compiled mcpx modules.
  */
-const DIST_ROOT = resolve(__dirname, '../../../dist');
+const DIST_ROOT = resolve(__dirname, '../../../out/dist');
 
 /**
  * Creates a temporary module root with the probe-shell module.
@@ -145,7 +145,7 @@ function spawnShellRunner(
   }
 
   try {
-    const result = execFileSync('node', [runnerScript, ...args], {
+    const result = execFileSync('node', ['--import', 'tsx/esm', runnerScript, ...args], {
       env: spawnEnv,
       timeout: 30_000,
       stdio: ['pipe', 'pipe', 'pipe'],

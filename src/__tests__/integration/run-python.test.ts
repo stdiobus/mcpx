@@ -80,7 +80,7 @@ function spawnMcpxRunner(
   }
 
   try {
-    const result = execFileSync('node', [MCPX_RUNNER, moduleId], {
+    const result = execFileSync('node', ['--import', 'tsx/esm', MCPX_RUNNER, moduleId], {
       env: spawnEnv,
       timeout,
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -200,7 +200,7 @@ const describeIfPython = hasPython3 ? describe : describe.skip;
 describeIfPython('Integration: Python runtime real launch', () => {
   beforeAll(() => {
     // Ensure the project is built
-    if (!existsSync(resolve(__dirname, '../../../dist/index.js'))) {
+    if (!existsSync(resolve(__dirname, '../../../out/dist/index.js'))) {
       throw new Error(
         'mcpx must be built before running integration tests. Run: npm run build',
       );

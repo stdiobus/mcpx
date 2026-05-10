@@ -49,7 +49,7 @@ function spawnMcpx(
   }
 
   try {
-    const result = execFileSync('node', [MCPX_RUNNER, ...args], {
+    const result = execFileSync('node', ['--import', 'tsx/esm', MCPX_RUNNER, ...args], {
       env: spawnEnv,
       timeout: 15_000,
       stdio: ['pipe', 'pipe', 'pipe'],

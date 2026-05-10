@@ -115,7 +115,7 @@ jobs:
           path: out/
 
       - name: Run unit tests
-        run: npx jest --testPathPattern='src/(cli|core|platform|runtimes)/.*\.test\.ts$'
+        run: npx jest --testPathPattern "src/(cli|core|platform|runtimes)/.*\\.test\\.ts$"
         env:
           NODE_OPTIONS: '--experimental-vm-modules'
 

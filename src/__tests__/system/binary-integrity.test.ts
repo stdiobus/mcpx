@@ -27,7 +27,7 @@ const PACKAGE_ROOT = resolve(__dirname, '../../..');
 const BIN_MCPX = resolve(PACKAGE_ROOT, 'bin/mcpx');
 
 /** Path to the dist directory */
-const DIST_DIR = resolve(PACKAGE_ROOT, 'dist');
+const DIST_DIR = resolve(PACKAGE_ROOT, 'out/dist');
 
 /** Path to the dist/index.js entry */
 const DIST_INDEX = resolve(DIST_DIR, 'index.js');

@@ -28,7 +28,7 @@ const __dirname = dirname(__filename);
 /**
  * Path to the compiled mcpx dist directory.
  */
-const DIST_ROOT = resolve(__dirname, '../../../dist');
+const DIST_ROOT = resolve(__dirname, '../../../out/dist');
 
 /**
  * Path to the mcpx bin shim.
@@ -86,7 +86,7 @@ function spawnMcpxRun(
   }
 
   try {
-    const result = execFileSync('node', [runnerPath, 'run', moduleId], {
+    const result = execFileSync('node', ['--import', 'tsx/esm', runnerPath, 'run', moduleId], {
       env: spawnEnv,
       timeout,
       stdio: ['pipe', 'pipe', 'pipe'],

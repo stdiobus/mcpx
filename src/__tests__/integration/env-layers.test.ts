@@ -70,7 +70,7 @@ function spawnEnvRunner(
   }
 
   try {
-    const result = execFileSync('node', [ENV_LAYERS_RUNNER, moduleId], {
+    const result = execFileSync('node', ['--import', 'tsx/esm', ENV_LAYERS_RUNNER, moduleId], {
       env: spawnEnv,
       timeout: SPAWN_TIMEOUT,
       stdio: ['pipe', 'pipe', 'pipe'],

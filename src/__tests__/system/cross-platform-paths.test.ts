@@ -36,7 +36,7 @@ const __dirname = dirname(__filename);
 /**
  * Path to the compiled mcpx dist directory.
  */
-const DIST_ROOT = resolve(__dirname, '../../../dist');
+const DIST_ROOT = resolve(__dirname, '../../../out/dist');
 
 /**
  * Path to the mcpx bin shim.

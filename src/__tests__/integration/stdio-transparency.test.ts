@@ -76,7 +76,7 @@ function spawnMcpxWithPayload(payload: Buffer): {
   stderr: Buffer;
   exitCode: number | null;
 } {
-  const result = spawnSync('node', [STDIO_RUNNER, 'stdio-cat'], {
+  const result = spawnSync('node', ['--import', 'tsx/esm', STDIO_RUNNER, 'stdio-cat'], {
     input: payload,
     env: {
       ...process.env,
