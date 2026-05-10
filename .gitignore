@@ -1,0 +1,73 @@
+# IDE
+.idea/
+.vscode/
+.kiro/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+.eclipse/
+settings/cli.json
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+.npm
+.node_repl_history
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+.mypy_cache/
+.pytest_cache/
+.tox/
+.coverage
+htmlcov/
+
+# AI
+.ipynb_checkpoints/
+*.h5
+*.hdf5
+*.pkl
+*.model
+*.onnx
+*.pt
+*.pth
+wandb/
+mlruns/
+*.tfevents*
+logs/
+checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.bak
+
+# Environment
+.env
+.env.local
+.env.*.local

@@ -1,0 +1,11 @@
+#!/usr/bin/env node
+/**
+ * mcpx CLI entry point.
+ *
+ * This shim imports the bundled CLI module which includes the shebang
+ * in its banner. We keep this thin wrapper for npm bin resolution.
+ */
+import('../dist/cli.js').catch((err) => {
+  process.stderr.write(`[mcpx] Fatal: ${err.message || err}\n`);
+  process.exit(1);
+});
