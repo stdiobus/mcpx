@@ -1,20 +1,24 @@
-<h1 align="center" style="font-weight:500"><strong>Universal MCP Module Launcher</strong></h1>
-<p align="center">One command to run any MCP server module — in any language, on any platform. A manifest-driven launcher for <a href="https://stdiobus.com" target="_blank">stdio Bus</a> ecosystem that replaces hardcoded bash commands in <code>mcp.json</code> with a portable, runtime-agnostic <code>mcpx run &lt;module&gt;</code>.
+<h1 align="center" style="font-weight:500">
+  Universal MCP Module Launcher
 </p>
 
 <p align="center">
-<a href="https://www.npmjs.com/package/@stdiobus/mcpx"><img src="https://img.shields.io/badge/version-0.1.0-brightgreen?style=for-the-badge&logo=semver" alt="Version"></a>
-<a href="https://modelcontextprotocol.io"><img src="https://img.shields.io/badge/protocol-MCP-purple?style=for-the-badge&logo=jsonwebtokens" alt="MCP"></a>
-<a href="https://agentclientprotocol.com"><img src="https://img.shields.io/badge/protocol-ACP-purple?style=for-the-badge&logo=jsonwebtokens" alt="ACP"></a>
-<a href="https://github.com/stdiobus"><img src="https://img.shields.io/badge/ecosystem-stdio%20Bus-ff4500?style=for-the-badge" alt="stdioBus"></a>
-<a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-18%2B-339933?style=for-the-badge&logo=nodedotjs" alt="Node.js"></a>
-<a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript" alt="TypeScript"></a>
-<a href="https://github.com/stdiobus/mcpx"><img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey?style=for-the-badge&logo=apple" alt="Platform"></a>
-<a href="https://github.com/stdiobus/mcpx"><img src="https://img.shields.io/badge/runtimes-Node%20%7C%20Python%20%7C%20Go%20%7C%20Rust%20%7C%20Shell%20%7C%20Docker-blue?style=for-the-badge" alt="Runtimes"></a>
-<a href="https://github.com/stdiobus/mcpx"><img src="https://img.shields.io/badge/stdio-transparent-success?style=for-the-badge&logo=gnubash" alt="Stdio Transparent"></a>
-<a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue?style=for-the-badge&logo=opensourceinitiative" alt="License"></a>
-<a href="https://github.com/stdiobus/mcpx/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/stdiobus/mcpx/ci.yml?style=for-the-badge&logo=githubactions&label=CI" alt="CI"></a>
-<a href="https://github.com/stdiobus/mcpx"><img src="https://img.shields.io/badge/tests-property%20%7C%20integration%20%7C%20e2e-brightgreen?style=for-the-badge&logo=jest" alt="Tests"></a>
+  One command to run any MCP server module — in any language, on any platform. A manifest-driven launcher for <a href="https://stdiobus.com" target="_blank">stdio Bus</a> ecosystem that replaces hardcoded bash commands in <code>mcp.json</code> with a portable, runtime-agnostic <code>mcpx run &lt;module&gt;</code>.
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@stdiobus/mcpx"><img src="https://img.shields.io/badge/version-0.1.0-brightgreen?style=for-the-badge&logo=semver" alt="Version"></a>
+  <a href="https://modelcontextprotocol.io"><img src="https://img.shields.io/badge/protocol-MCP-purple?style=for-the-badge&logo=jsonwebtokens" alt="MCP"></a>
+  <a href="https://agentclientprotocol.com"><img src="https://img.shields.io/badge/protocol-ACP-purple?style=for-the-badge&logo=jsonwebtokens" alt="ACP"></a>
+  <a href="https://github.com/stdiobus"><img src="https://img.shields.io/badge/ecosystem-stdio%20Bus-ff4500?style=for-the-badge" alt="stdioBus"></a>
+  <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-18%2B-339933?style=for-the-badge&logo=nodedotjs" alt="Node.js"></a>
+  <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript" alt="TypeScript"></a>
+  <a href="https://github.com/stdiobus/mcpx"><img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey?style=for-the-badge&logo=apple" alt="Platform"></a>
+  <a href="https://github.com/stdiobus/mcpx"><img src="https://img.shields.io/badge/runtimes-Node%20%7C%20Python%20%7C%20Go%20%7C%20Rust%20%7C%20Shell%20%7C%20Docker-blue?style=for-the-badge" alt="Runtimes"></a>
+  <a href="https://github.com/stdiobus/mcpx"><img src="https://img.shields.io/badge/stdio-transparent-success?style=for-the-badge&logo=gnubash" alt="Stdio Transparent"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue?style=for-the-badge&logo=opensourceinitiative" alt="License"></a>
+  <a href="https://github.com/stdiobus/mcpx/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/stdiobus/mcpx/ci.yml?style=for-the-badge&logo=githubactions&label=CI" alt="CI"></a>
+  <a href="https://github.com/stdiobus/mcpx"><img src="https://img.shields.io/badge/tests-property%20%7C%20integration%20%7C%20e2e-brightgreen?style=for-the-badge&logo=jest" alt="Tests"></a>
 </p>
 
 ## Why mcpx?
