@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { resolve, join } from 'node:path';
 import type { ResolvedModule } from '../core/manifest.js';
 
 // Mock fs and child_process
@@ -68,6 +69,7 @@ describe('GoPlugin', () => {
   });
 
   describe('buildCommand', () => {
+    const MODULE_DIR = resolve('/tmp/test-module');
     const makeModule = (entry: string, args?: string[]): ResolvedModule => ({
       manifest: {
         id: 'my-go-module',
@@ -76,8 +78,8 @@ describe('GoPlugin', () => {
         entry,
         args,
       },
-      dir: '/path/to/module',
-      manifestPath: '/path/to/module/module.json',
+      dir: MODULE_DIR,
+      manifestPath: join(MODULE_DIR, 'module.json'),
     });
 
     it('uses pre-built binary when it exists (entry without extension)', () => {
@@ -86,9 +88,9 @@ describe('GoPlugin', () => {
       const module = makeModule('main.go');
       const result = plugin.buildCommand(module);
 
-      expect(result.command).toBe('/path/to/module/main');
+      expect(result.command).toBe(resolve(MODULE_DIR, 'main'));
       expect(result.args).toEqual([]);
-      expect(result.cwd).toBe('/path/to/module');
+      expect(result.cwd).toBe(MODULE_DIR);
     });
 
     it('falls back to go run when no binary exists', () => {
@@ -99,7 +101,7 @@ describe('GoPlugin', () => {
 
       expect(result.command).toBe('go');
       expect(result.args).toEqual(['run', 'cmd/server.go']);
-      expect(result.cwd).toBe('/path/to/module');
+      expect(result.cwd).toBe(MODULE_DIR);
     });
 
     it('passes manifest args to pre-built binary', () => {
@@ -108,7 +110,7 @@ describe('GoPlugin', () => {
       const module = makeModule('main.go', ['--port', '3000']);
       const result = plugin.buildCommand(module);
 
-      expect(result.command).toBe('/path/to/module/main');
+      expect(result.command).toBe(resolve(MODULE_DIR, 'main'));
       expect(result.args).toEqual(['--port', '3000']);
     });
 
@@ -128,7 +130,7 @@ describe('GoPlugin', () => {
       const module = makeModule('main.go');
       const result = plugin.buildCommand(module);
 
-      expect(result.cwd).toBe('/path/to/module');
+      expect(result.cwd).toBe(MODULE_DIR);
     });
 
     it('returns empty env object', () => {

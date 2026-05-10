@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { resolve, join } from 'node:path';
 import type { ResolvedModule } from '../core/manifest.js';
 
 // Mock fs and child_process
@@ -68,6 +69,7 @@ describe('RustPlugin', () => {
   });
 
   describe('buildCommand', () => {
+    const MODULE_DIR = resolve('/tmp/test-module');
     const makeModule = (id: string, args?: string[]): ResolvedModule => ({
       manifest: {
         id,
@@ -76,8 +78,8 @@ describe('RustPlugin', () => {
         entry: 'src/main.rs',
         args,
       },
-      dir: '/path/to/module',
-      manifestPath: '/path/to/module/module.json',
+      dir: MODULE_DIR,
+      manifestPath: join(MODULE_DIR, 'module.json'),
     });
 
     it('uses pre-built binary from target/release/<id> when it exists', () => {
@@ -86,9 +88,9 @@ describe('RustPlugin', () => {
       const module = makeModule('my-rust-server');
       const result = plugin.buildCommand(module);
 
-      expect(result.command).toBe('/path/to/module/target/release/my-rust-server');
+      expect(result.command).toBe(resolve(MODULE_DIR, 'target', 'release', 'my-rust-server'));
       expect(result.args).toEqual([]);
-      expect(result.cwd).toBe('/path/to/module');
+      expect(result.cwd).toBe(MODULE_DIR);
     });
 
     it('falls back to cargo run when no binary exists', () => {
@@ -99,7 +101,7 @@ describe('RustPlugin', () => {
 
       expect(result.command).toBe('cargo');
       expect(result.args).toEqual(['run']);
-      expect(result.cwd).toBe('/path/to/module');
+      expect(result.cwd).toBe(MODULE_DIR);
     });
 
     it('passes manifest args to pre-built binary', () => {
@@ -108,7 +110,7 @@ describe('RustPlugin', () => {
       const module = makeModule('my-rust-server', ['--port', '3000']);
       const result = plugin.buildCommand(module);
 
-      expect(result.command).toBe('/path/to/module/target/release/my-rust-server');
+      expect(result.command).toBe(resolve(MODULE_DIR, 'target', 'release', 'my-rust-server'));
       expect(result.args).toEqual(['--port', '3000']);
     });
 
@@ -138,7 +140,7 @@ describe('RustPlugin', () => {
       const module = makeModule('my-rust-server');
       const result = plugin.buildCommand(module);
 
-      expect(result.cwd).toBe('/path/to/module');
+      expect(result.cwd).toBe(MODULE_DIR);
     });
 
     it('returns empty env object', () => {

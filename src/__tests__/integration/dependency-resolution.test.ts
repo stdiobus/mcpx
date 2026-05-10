@@ -469,87 +469,90 @@ describe('Integration: Dependency Resolution', () => {
   });
 
   describe('Depth limit: chain deeper than 10 levels', () => {
-    it('throws MaxDepthExceededError when dependency chain exceeds max depth', async () => {
-      suppressOutput();
+    it(
+      'throws MaxDepthExceededError when dependency chain exceeds max depth',
+      async () => {
+        suppressOutput();
+        // Create a registry with a chain of 12 modules: level-0 → level-1 → ... → level-11
+        const deepModules = new Map<string, RegistryEntry>();
+        for (let i = 0; i <= 11; i++) {
+          deepModules.set(`level-${i}`, {
+            id: `level-${i}`,
+            name: `Level ${i}`,
+            description: `Depth level ${i}`,
+            gitUrl: 'file:///fake',
+            latestVersion: '1.0.0',
+            runtimes: ['nodejs'],
+            publishedAt: '2024-01-01T00:00:00Z',
+          });
+        }
 
-      // Create a registry with a chain of 12 modules: level-0 → level-1 → ... → level-11
-      const deepModules = new Map<string, RegistryEntry>();
-      for (let i = 0; i <= 11; i++) {
-        deepModules.set(`level-${i}`, {
-          id: `level-${i}`,
-          name: `Level ${i}`,
-          description: `Depth level ${i}`,
-          gitUrl: 'file:///fake',
-          latestVersion: '1.0.0',
-          runtimes: ['nodejs'],
-          publishedAt: '2024-01-01T00:00:00Z',
-        });
-      }
+        const { server: deepServer, baseUrl: deepBaseUrl } =
+          await createMockRegistryServer(deepModules);
 
-      const { server: deepServer, baseUrl: deepBaseUrl } =
-        await createMockRegistryServer(deepModules);
+        try {
+          const deepClient = createHttpRegistryClient(deepBaseUrl);
 
-      try {
-        const deepClient = createHttpRegistryClient(deepBaseUrl);
+          // The resolver processes nodes in BFS order. Since registry entries
+          // produce nodes with empty dependencies, we can't create a true deep chain
+          // through the registry alone. Instead, we test the depth limit directly
+          // by constructing a DependencyNode tree that would exceed depth 10.
+          //
+          // We'll use maxDepth=2 and create a root with a dep that gets queued at depth 1,
+          // which then has a dep queued at depth 2, which then has a dep queued at depth 3.
+          // But since registry returns empty deps, we need to test differently.
+          //
+          // The correct approach: test with a very small maxDepth to verify the mechanism works.
+          const rootNode: DependencyNode = {
+            id: 'deep-root',
+            version: '1.0.0',
+            dependencies: { 'level-0': '1.0.0' },
+          };
 
-        // The resolver processes nodes in BFS order. Since registry entries
-        // produce nodes with empty dependencies, we can't create a true deep chain
-        // through the registry alone. Instead, we test the depth limit directly
-        // by constructing a DependencyNode tree that would exceed depth 10.
-        //
-        // We'll use maxDepth=2 and create a root with a dep that gets queued at depth 1,
-        // which then has a dep queued at depth 2, which then has a dep queued at depth 3.
-        // But since registry returns empty deps, we need to test differently.
-        //
-        // The correct approach: test with a very small maxDepth to verify the mechanism works.
-        const rootNode: DependencyNode = {
-          id: 'deep-root',
-          version: '1.0.0',
-          dependencies: { 'level-0': '1.0.0' },
-        };
+          // With maxDepth=0: root is processed at depth 0, level-0 is queued at depth 1.
+          // Processing level-0 at depth 1: 1 > 0 → throws MaxDepthExceededError
+          await expect(resolveDependencies(rootNode, deepClient, 0)).rejects.toThrow(
+            MaxDepthExceededError,
+          );
+          await expect(resolveDependencies(rootNode, deepClient, 0)).rejects.toThrow(
+            /maximum depth of 0/,
+          );
 
-        // With maxDepth=0: root is processed at depth 0, level-0 is queued at depth 1.
-        // Processing level-0 at depth 1: 1 > 0 → throws MaxDepthExceededError
-        await expect(resolveDependencies(rootNode, deepClient, 0)).rejects.toThrow(
-          MaxDepthExceededError,
-        );
-        await expect(resolveDependencies(rootNode, deepClient, 0)).rejects.toThrow(
-          /maximum depth of 0/,
-        );
+          // Test with the default max depth (10) — a single level should be fine
+          const resolved = await resolveDependencies(rootNode, deepClient);
+          expect(resolved).toHaveLength(1);
+          expect(resolved[0].id).toBe('level-0');
 
-        // Test with the default max depth (10) — a single level should be fine
-        const resolved = await resolveDependencies(rootNode, deepClient);
-        expect(resolved).toHaveLength(1);
-        expect(resolved[0].id).toBe('level-0');
+          // Test that maxDepth=10 is the default and works for shallow chains
+          const multiDepRoot: DependencyNode = {
+            id: 'multi-root',
+            version: '1.0.0',
+            dependencies: {
+              'level-0': '1.0.0',
+              'level-1': '1.0.0',
+              'level-2': '1.0.0',
+              'level-3': '1.0.0',
+              'level-4': '1.0.0',
+              'level-5': '1.0.0',
+              'level-6': '1.0.0',
+              'level-7': '1.0.0',
+              'level-8': '1.0.0',
+              'level-9': '1.0.0',
+              'level-10': '1.0.0',
+              'level-11': '1.0.0',
+            },
+          };
 
-        // Test that maxDepth=10 is the default and works for shallow chains
-        const multiDepRoot: DependencyNode = {
-          id: 'multi-root',
-          version: '1.0.0',
-          dependencies: {
-            'level-0': '1.0.0',
-            'level-1': '1.0.0',
-            'level-2': '1.0.0',
-            'level-3': '1.0.0',
-            'level-4': '1.0.0',
-            'level-5': '1.0.0',
-            'level-6': '1.0.0',
-            'level-7': '1.0.0',
-            'level-8': '1.0.0',
-            'level-9': '1.0.0',
-            'level-10': '1.0.0',
-            'level-11': '1.0.0',
-          },
-        };
-
-        // All 12 deps are at depth 1 (direct deps of root at depth 0)
-        // So they should all resolve fine within maxDepth=10
-        const resolvedMulti = await resolveDependencies(multiDepRoot, deepClient);
-        expect(resolvedMulti).toHaveLength(12);
-      } finally {
-        await new Promise<void>((resolve) => deepServer.close(() => resolve()));
-      }
-    });
+          // All 12 deps are at depth 1 (direct deps of root at depth 0)
+          // So they should all resolve fine within maxDepth=10
+          const resolvedMulti = await resolveDependencies(multiDepRoot, deepClient);
+          expect(resolvedMulti).toHaveLength(12);
+        } finally {
+          await new Promise<void>((resolve) => deepServer.close(() => resolve()));
+        }
+      },
+      30_000,
+    );
   });
 
   describe('Version conflict: A needs B@1.0, C needs B@2.0', () => {
