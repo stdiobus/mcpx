@@ -19,13 +19,13 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Import compiled modules from dist/
-const distRoot = resolve(__dirname, '../../../dist');
+// Import from TypeScript source via tsx loader
+const srcRoot = resolve(__dirname, '../../');
 
-const { installCommand } = await import(join(distRoot, 'cli/commands/install.js'));
-const { HttpRegistryClient } = await import(join(distRoot, 'registry/client.js'));
-const { Logger } = await import(join(distRoot, 'core/logger.js'));
-const { resolveRoot } = await import(join(distRoot, 'core/resolver.js'));
+const { installCommand } = await import(join(srcRoot, 'cli/commands/install.ts'));
+const { HttpRegistryClient } = await import(join(srcRoot, 'registry/client.ts'));
+const { Logger } = await import(join(srcRoot, 'core/logger.ts'));
+const { resolveRoot } = await import(join(srcRoot, 'core/resolver.ts'));
 
 /**
  * Main CLI logic — parses args and invokes installCommand.

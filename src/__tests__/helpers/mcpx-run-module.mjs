@@ -26,22 +26,22 @@ import { spawnSync } from 'node:child_process';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Import compiled modules from dist/
-const distRoot = resolve(__dirname, '../../../dist');
+// Import from TypeScript source via tsx loader
+const srcRoot = resolve(__dirname, '../../');
 
 const { McpxError, ManifestError, RuntimeError, EnvironmentError } = await import(
-  join(distRoot, 'core/errors.js')
+  join(srcRoot, 'core/errors.ts')
 );
-const { resolveRoot, resolveModuleById } = await import(join(distRoot, 'core/resolver.js'));
-const { validateManifest } = await import(join(distRoot, 'core/manifest.js'));
-const { loadEnvironment } = await import(join(distRoot, 'core/env-loader.js'));
-const { Logger } = await import(join(distRoot, 'core/logger.js'));
-const { PythonPlugin } = await import(join(distRoot, 'runtimes/python.js'));
-const { NodejsPlugin } = await import(join(distRoot, 'runtimes/nodejs.js'));
-const { ShellPlugin } = await import(join(distRoot, 'runtimes/shell.js'));
-const { GoPlugin } = await import(join(distRoot, 'runtimes/go.js'));
-const { RustPlugin } = await import(join(distRoot, 'runtimes/rust.js'));
-const { DockerPlugin } = await import(join(distRoot, 'runtimes/docker.js'));
+const { resolveRoot, resolveModuleById } = await import(join(srcRoot, 'core/resolver.ts'));
+const { validateManifest } = await import(join(srcRoot, 'core/manifest.ts'));
+const { loadEnvironment } = await import(join(srcRoot, 'core/env-loader.ts'));
+const { Logger } = await import(join(srcRoot, 'core/logger.ts'));
+const { PythonPlugin } = await import(join(srcRoot, 'runtimes/python.ts'));
+const { NodejsPlugin } = await import(join(srcRoot, 'runtimes/nodejs.ts'));
+const { ShellPlugin } = await import(join(srcRoot, 'runtimes/shell.ts'));
+const { GoPlugin } = await import(join(srcRoot, 'runtimes/go.ts'));
+const { RustPlugin } = await import(join(srcRoot, 'runtimes/rust.ts'));
+const { DockerPlugin } = await import(join(srcRoot, 'runtimes/docker.ts'));
 
 /**
  * Runtime plugin instances keyed by runtime name.

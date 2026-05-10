@@ -6,7 +6,8 @@
  * TypeScript modules and producing proper exit codes based on error types.
  * It is used by property tests to spawn REAL processes and verify exit codes.
  *
- * Usage: node mcpx-runner.mjs run <module_id>
+ * Usage: node --import tsx/esm mcpx-runner.mjs run <module_id>
+ *        (or via spawnMcpxRunner which sets up tsx loader)
  *
  * Environment:
  *   MCPX_ROOT - Module root directory (required for testing)
@@ -19,14 +20,14 @@ import { existsSync, readFileSync } from 'node:fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Import compiled modules from dist/
-const distRoot = resolve(__dirname, '../../../dist');
+// Import directly from TypeScript source via tsx loader
+const srcRoot = resolve(__dirname, '../../');
 
 const { McpxError, ManifestError, RuntimeError, EnvironmentError, EXIT_CODES } = await import(
-  join(distRoot, 'core/errors.js')
+  join(srcRoot, 'core/errors.ts')
 );
-const { resolveRoot, resolveModuleById } = await import(join(distRoot, 'core/resolver.js'));
-const { validateManifest } = await import(join(distRoot, 'core/manifest.js'));
+const { resolveRoot, resolveModuleById } = await import(join(srcRoot, 'core/resolver.ts'));
+const { validateManifest } = await import(join(srcRoot, 'core/manifest.ts'));
 
 /**
  * Main CLI logic — resolves module, validates manifest, checks runtime.

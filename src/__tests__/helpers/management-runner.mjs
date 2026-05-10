@@ -20,24 +20,24 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Import compiled modules from dist/
-const distRoot = resolve(__dirname, '../../../dist');
+// Import from TypeScript source via tsx loader
+const srcRoot = resolve(__dirname, '../../');
 
-const { resolveRoot } = await import(join(distRoot, 'core/resolver.js'));
-const { Logger } = await import(join(distRoot, 'core/logger.js'));
-const { parseArgs } = await import(join(distRoot, 'cli/parser.js'));
-const { listCommand } = await import(join(distRoot, 'cli/commands/list.js'));
-const { doctorCommand } = await import(join(distRoot, 'cli/commands/doctor.js'));
-const { envCommand } = await import(join(distRoot, 'cli/commands/env.js'));
+const { resolveRoot } = await import(join(srcRoot, 'core/resolver.ts'));
+const { Logger } = await import(join(srcRoot, 'core/logger.ts'));
+const { parseArgs } = await import(join(srcRoot, 'cli/parser.ts'));
+const { listCommand } = await import(join(srcRoot, 'cli/commands/list.ts'));
+const { doctorCommand } = await import(join(srcRoot, 'cli/commands/doctor.ts'));
+const { envCommand } = await import(join(srcRoot, 'cli/commands/env.ts'));
 
 // Register runtime plugins so list/doctor can check availability
-const { registerPlugin } = await import(join(distRoot, 'runtimes/registry.js'));
-const { NodejsPlugin } = await import(join(distRoot, 'runtimes/nodejs.js'));
-const { PythonPlugin } = await import(join(distRoot, 'runtimes/python.js'));
-const { GoPlugin } = await import(join(distRoot, 'runtimes/go.js'));
-const { RustPlugin } = await import(join(distRoot, 'runtimes/rust.js'));
-const { ShellPlugin } = await import(join(distRoot, 'runtimes/shell.js'));
-const { DockerPlugin } = await import(join(distRoot, 'runtimes/docker.js'));
+const { registerPlugin } = await import(join(srcRoot, 'runtimes/registry.ts'));
+const { NodejsPlugin } = await import(join(srcRoot, 'runtimes/nodejs.ts'));
+const { PythonPlugin } = await import(join(srcRoot, 'runtimes/python.ts'));
+const { GoPlugin } = await import(join(srcRoot, 'runtimes/go.ts'));
+const { RustPlugin } = await import(join(srcRoot, 'runtimes/rust.ts'));
+const { ShellPlugin } = await import(join(srcRoot, 'runtimes/shell.ts'));
+const { DockerPlugin } = await import(join(srcRoot, 'runtimes/docker.ts'));
 
 registerPlugin('nodejs', new NodejsPlugin());
 registerPlugin('python', new PythonPlugin());

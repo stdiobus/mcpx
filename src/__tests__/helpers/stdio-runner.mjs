@@ -28,13 +28,13 @@ import { existsSync, readFileSync } from 'node:fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Import compiled modules from dist/
-const distRoot = resolve(__dirname, '../../../dist');
+// Import from TypeScript source via tsx loader
+const srcRoot = resolve(__dirname, '../../');
 
-const { McpxError, RuntimeError } = await import(join(distRoot, 'core/errors.js'));
-const { resolveRoot, resolveModuleById } = await import(join(distRoot, 'core/resolver.js'));
-const { validateManifest } = await import(join(distRoot, 'core/manifest.js'));
-const { execModule } = await import(join(distRoot, 'platform/exec.js'));
+const { McpxError, RuntimeError } = await import(join(srcRoot, 'core/errors.ts'));
+const { resolveRoot, resolveModuleById } = await import(join(srcRoot, 'core/resolver.ts'));
+const { validateManifest } = await import(join(srcRoot, 'core/manifest.ts'));
+const { execModule } = await import(join(srcRoot, 'platform/exec.ts'));
 
 function main() {
   const args = process.argv.slice(2);

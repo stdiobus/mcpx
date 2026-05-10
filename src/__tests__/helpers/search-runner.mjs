@@ -17,11 +17,11 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Import compiled modules from dist/
-const distRoot = resolve(__dirname, '../../../dist');
+// Import from TypeScript source via tsx loader
+const srcRoot = resolve(__dirname, '../../');
 
-const { searchCommand } = await import(join(distRoot, 'cli/commands/search.js'));
-const { HttpRegistryClient } = await import(join(distRoot, 'registry/client.js'));
+const { searchCommand } = await import(join(srcRoot, 'cli/commands/search.ts'));
+const { HttpRegistryClient } = await import(join(srcRoot, 'registry/client.ts'));
 
 /**
  * Main runner logic — parses args and invokes searchCommand.

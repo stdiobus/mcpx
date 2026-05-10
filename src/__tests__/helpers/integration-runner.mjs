@@ -27,19 +27,19 @@ import { spawnSync } from 'node:child_process';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Import compiled modules from dist/
-const distRoot = resolve(__dirname, '../../../dist');
+// Import from TypeScript source via tsx loader
+const srcRoot = resolve(__dirname, '../../');
 
 const { McpxError, ManifestError, RuntimeError, EnvironmentError } = await import(
-  join(distRoot, 'core/errors.js')
+  join(srcRoot, 'core/errors.ts')
 );
-const { resolveRoot, resolveModuleById } = await import(join(distRoot, 'core/resolver.js'));
-const { validateManifest } = await import(join(distRoot, 'core/manifest.js'));
-const { loadEnvironment } = await import(join(distRoot, 'core/env-loader.js'));
-const { Logger } = await import(join(distRoot, 'core/logger.js'));
+const { resolveRoot, resolveModuleById } = await import(join(srcRoot, 'core/resolver.ts'));
+const { validateManifest } = await import(join(srcRoot, 'core/manifest.ts'));
+const { loadEnvironment } = await import(join(srcRoot, 'core/env-loader.ts'));
+const { Logger } = await import(join(srcRoot, 'core/logger.ts'));
 
 // Import the nodejs runtime plugin
-const { NodejsPlugin } = await import(join(distRoot, 'runtimes/nodejs.js'));
+const { NodejsPlugin } = await import(join(srcRoot, 'runtimes/nodejs.ts'));
 
 /**
  * Main integration runner logic.
