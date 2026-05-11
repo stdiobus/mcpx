@@ -3,7 +3,7 @@ import * as fc from 'fast-check';
 import { resolveRoot } from '../../core/resolver.js';
 import { McpxError } from '../../core/errors.js';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, realpathSync } from 'node:fs';
-import { join, resolve, relative } from 'node:path';
+import { join, resolve, relative, isAbsolute } from 'node:path';
 import { tmpdir } from 'node:os';
 
 /**
@@ -187,7 +187,7 @@ describe('Root Resolution Properties', () => {
           const result = resolveRoot();
 
           // Result must be absolute
-          expect(result.startsWith('/')).toBe(true);
+          expect(isAbsolute(result)).toBe(true);
 
           // Result must equal the resolved absolute path
           // On macOS, realpath resolves /var → /private/var
