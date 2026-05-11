@@ -87,30 +87,15 @@ describe('System: Binary Integrity', () => {
       expect(stat.size).toBeGreaterThan(0);
     });
 
-    it('dist/ contains all compiled modules (cli, core, platform, runtimes, registry)', () => {
+    it('out/dist/ contains all bundled files', () => {
       expect(existsSync(DIST_DIR)).toBe(true);
 
       const entries = readdirSync(DIST_DIR);
 
-      // Verify expected subdirectories exist
-      expect(entries).toContain('cli');
-      expect(entries).toContain('core');
-      expect(entries).toContain('platform');
-      expect(entries).toContain('runtimes');
-      expect(entries).toContain('registry');
-
-      // Verify key compiled files exist within subdirectories
-      expect(existsSync(resolve(DIST_DIR, 'cli/parser.js'))).toBe(true);
-      expect(existsSync(resolve(DIST_DIR, 'core/resolver.js'))).toBe(true);
-      expect(existsSync(resolve(DIST_DIR, 'core/manifest.js'))).toBe(true);
-      expect(existsSync(resolve(DIST_DIR, 'core/env-loader.js'))).toBe(true);
-      expect(existsSync(resolve(DIST_DIR, 'core/errors.js'))).toBe(true);
-      expect(existsSync(resolve(DIST_DIR, 'core/logger.js'))).toBe(true);
-      expect(existsSync(resolve(DIST_DIR, 'platform/exec.js'))).toBe(true);
-      expect(existsSync(resolve(DIST_DIR, 'runtimes/nodejs.js'))).toBe(true);
-      expect(existsSync(resolve(DIST_DIR, 'runtimes/python.js'))).toBe(true);
-      expect(existsSync(resolve(DIST_DIR, 'runtimes/plugin.js'))).toBe(true);
-      expect(existsSync(resolve(DIST_DIR, 'registry/client.js'))).toBe(true);
+      // Verify expected bundle files exist
+      expect(entries).toContain('index.js');
+      expect(entries).toContain('index.cjs');
+      expect(entries).toContain('cli.js');
     });
   });
 
@@ -125,7 +110,7 @@ describe('System: Binary Integrity', () => {
     it('node mcpx-runner.mjs run nonexistent exits non-zero with error on stderr', () => {
       // Use the mcpx-runner which exercises the real compiled CLI code paths
       const MCPX_RUNNER = resolve(__dirname, '../helpers/mcpx-runner.mjs');
-      const result = spawnNode([MCPX_RUNNER, 'run', 'nonexistent-module-xyz'], {
+      const result = spawnNode(['--import', 'tsx/esm', MCPX_RUNNER, 'run', 'nonexistent-module-xyz'], {
         cwd: PACKAGE_ROOT,
       });
 
@@ -160,13 +145,11 @@ describe('System: Binary Integrity', () => {
       expect(result.exitCode).toBe(0);
     });
 
-    it('core modules can be imported without errors', () => {
-      // Verify key internal modules can be imported independently
+    it('bundled modules can be imported without errors', () => {
+      // Verify the bundled entry points can be imported
       const modules = [
-        resolve(DIST_DIR, 'core/errors.js'),
-        resolve(DIST_DIR, 'core/manifest.js'),
-        resolve(DIST_DIR, 'core/resolver.js'),
-        resolve(DIST_DIR, 'cli/parser.js'),
+        resolve(DIST_DIR, 'index.js'),
+        resolve(DIST_DIR, 'cli.js'),
       ];
 
       for (const modulePath of modules) {

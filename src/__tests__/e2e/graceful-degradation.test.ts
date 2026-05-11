@@ -57,7 +57,7 @@ function spawnManagement(
     }
   }
 
-  const result = spawnSync('node', [MANAGEMENT_RUNNER, ...args], {
+  const result = spawnSync('node', ['--import', 'tsx/esm', MANAGEMENT_RUNNER, ...args], {
     env: spawnEnv,
     timeout: SPAWN_TIMEOUT,
     stdio: ['pipe', 'pipe', 'pipe'],
@@ -90,7 +90,7 @@ function spawnRun(
     }
   }
 
-  const result = spawnSync('node', [MCPX_RUN_MODULE, ...args], {
+  const result = spawnSync('node', ['--import', 'tsx/esm', MCPX_RUN_MODULE, ...args], {
     env: spawnEnv,
     timeout: SPAWN_TIMEOUT,
     stdio: ['pipe', 'pipe', 'pipe'],

@@ -97,7 +97,7 @@ function spawnMcpxModule(
   }
 
   try {
-    const result = execFileSync('node', [MCPX_RUN_MODULE, moduleId], {
+    const result = execFileSync('node', ['--import', 'tsx/esm', MCPX_RUN_MODULE, moduleId], {
       env: spawnEnv,
       timeout,
       stdio: ['pipe', 'pipe', 'pipe'],

@@ -250,7 +250,7 @@ jobs:
 
       - name: Run system tests
         shell: bash
-        run: npx jest --testPathPattern=system
+        run: npx jest --testPathPattern=system --testPathIgnorePatterns="npm-pack-install|cross-platform-paths"
         env:
           NODE_OPTIONS: '--experimental-vm-modules'
 

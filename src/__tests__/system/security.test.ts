@@ -56,7 +56,7 @@ function spawnMcpx(
     }
   }
 
-  const result = spawnSync('node', [MANAGEMENT_RUNNER, ...args], {
+  const result = spawnSync('node', ['--import', 'tsx/esm', MANAGEMENT_RUNNER, ...args], {
     env: spawnEnv,
     timeout,
     stdio: ['pipe', 'pipe', 'pipe'],

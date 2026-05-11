@@ -180,7 +180,7 @@ function spawnModule(
   }
 
   try {
-    const result = execFileSync('node', [SHELL_RUNNER, 'run', moduleId], {
+    const result = execFileSync('node', ['--import', 'tsx/esm', SHELL_RUNNER, 'run', moduleId], {
       env: spawnEnv,
       timeout: SPAWN_TIMEOUT,
       stdio: ['pipe', 'pipe', 'pipe'],

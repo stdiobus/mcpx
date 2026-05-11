@@ -111,7 +111,7 @@ function spawnRunner(
     }
   }
 
-  const result = spawnSync('node', [MCPX_RUNNER, ...args], {
+  const result = spawnSync('node', ['--import', 'tsx/esm', MCPX_RUNNER, ...args], {
     env: spawnEnv,
     cwd: cwd || process.cwd(),
     timeout: SPAWN_TIMEOUT,
@@ -462,7 +462,7 @@ writeFileSync(${JSON.stringify(outputPath)}, JSON.stringify(output, null, 2));
       };
 
       try {
-        execFileSync('node', [INTEGRATION_RUNNER, 'run', 'launch-probe'], {
+        execFileSync('node', ['--import', 'tsx/esm', INTEGRATION_RUNNER, 'run', 'launch-probe'], {
           env: spawnEnv,
           timeout: SPAWN_TIMEOUT,
           stdio: ['pipe', 'pipe', 'pipe'],

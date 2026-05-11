@@ -44,7 +44,7 @@ const MCPX_RUN_MODULE = resolve(__dirname, '../helpers/mcpx-run-module.mjs');
 /**
  * Path to the compiled dist directory.
  */
-const DIST_ROOT = resolve(__dirname, '../../../dist');
+const DIST_ROOT = resolve(__dirname, '../../../out/dist');
 
 /**
  * Timeout for spawning processes.
@@ -257,7 +257,7 @@ describe('E2E: MCP Client Simulation', () => {
         // Using mcpx-run-module.mjs which is the real compiled mcpx pipeline
         const config = {
           command: 'node',
-          args: [MCPX_RUN_MODULE, 'echo-server'],
+          args: ['--import', 'tsx/esm', MCPX_RUN_MODULE, 'echo-server'],
           env: { CLIENT_TOKEN: 'tok-abc' },
         };
 
@@ -300,7 +300,7 @@ describe('E2E: MCP Client Simulation', () => {
 
         const config = {
           command: 'node',
-          args: [MCPX_RUN_MODULE, 'echo-server'],
+          args: ['--import', 'tsx/esm', MCPX_RUN_MODULE, 'echo-server'],
           env: {},
         };
 
@@ -340,7 +340,7 @@ describe('E2E: MCP Client Simulation', () => {
 
         const config = {
           command: 'node',
-          args: [MCPX_RUN_MODULE, 'echo-server'],
+          args: ['--import', 'tsx/esm', MCPX_RUN_MODULE, 'echo-server'],
           env: {},
         };
 
@@ -379,7 +379,7 @@ describe('E2E: MCP Client Simulation', () => {
 
         const config = {
           command: 'node',
-          args: [MCPX_RUN_MODULE, 'echo-server'],
+          args: ['--import', 'tsx/esm', MCPX_RUN_MODULE, 'echo-server'],
           env: {},
         };
 
@@ -417,7 +417,7 @@ describe('E2E: MCP Client Simulation', () => {
 
         const config = {
           command: 'node',
-          args: [MCPX_RUN_MODULE, 'echo-server'],
+          args: ['--import', 'tsx/esm', MCPX_RUN_MODULE, 'echo-server'],
           env: {},
         };
 
@@ -457,7 +457,7 @@ describe('E2E: MCP Client Simulation', () => {
 
         const config = {
           command: 'node',
-          args: [MCPX_RUN_MODULE, 'echo-server'],
+          args: ['--import', 'tsx/esm', MCPX_RUN_MODULE, 'echo-server'],
           env: {},
         };
 
@@ -491,7 +491,7 @@ describe('E2E: MCP Client Simulation', () => {
         // which is equivalent to the shorthand mcp.json format (no "run" subcommand)
         const config = {
           command: 'node',
-          args: [MCPX_RUN_MODULE, 'echo-server'],
+          args: ['--import', 'tsx/esm', MCPX_RUN_MODULE, 'echo-server'],
           env: {},
         };
 
@@ -602,7 +602,7 @@ rl.on('close', () => {
         // and take precedence over .env files (system env has highest precedence per R5)
         const config = {
           command: 'node',
-          args: [MCPX_RUN_MODULE, 'env-probe'],
+          args: ['--import', 'tsx/esm', MCPX_RUN_MODULE, 'env-probe'],
           env: { CLIENT_TOKEN: 'tok-from-mcp-json' },
         };
 

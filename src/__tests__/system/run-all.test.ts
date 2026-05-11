@@ -126,12 +126,12 @@ describe('System: Build and Test Infrastructure', () => {
     });
 
     it('dist/ directory exists after build', () => {
-      const distPath = join(MCPX_ROOT, 'dist');
+      const distPath = join(MCPX_ROOT, 'out/dist');
       expect(existsSync(distPath)).toBe(true);
     });
 
     it('dist/index.js entry point exists', () => {
-      const entryPath = join(MCPX_ROOT, 'dist', 'index.js');
+      const entryPath = join(MCPX_ROOT, 'out/dist', 'index.js');
       expect(existsSync(entryPath)).toBe(true);
     });
   });

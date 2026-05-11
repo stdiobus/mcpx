@@ -64,7 +64,7 @@ function spawnCli(
     }
   }
 
-  const result = spawnSync('node', [CLI_RUNNER, ...args], {
+  const result = spawnSync('node', ['--import', 'tsx/esm', CLI_RUNNER, ...args], {
     env: spawnEnv,
     timeout: SPAWN_TIMEOUT,
     stdio: ['pipe', 'pipe', 'pipe'],

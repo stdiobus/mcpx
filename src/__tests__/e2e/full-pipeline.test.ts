@@ -179,7 +179,7 @@ rl.on('close', () => {
 
     const result = spawnSync(
       'node',
-      [MCPX_RUN_MODULE, 'echo-server'],
+      ['--import', 'tsx/esm', MCPX_RUN_MODULE, 'echo-server'],
       {
         input: Buffer.from(jsonRpcRequest, 'utf-8'),
         env: {
@@ -273,7 +273,7 @@ fs.writeFileSync('${outputPath.replace(/'/g, "\\'")}', output);
     // Spawn using the shell integration runner
     const result = spawnSync(
       'node',
-      [SHELL_RUNNER, 'run', 'env-dumper'],
+      ['--import', 'tsx/esm', SHELL_RUNNER, 'run', 'env-dumper'],
       {
         env: {
           ...process.env,
@@ -349,7 +349,7 @@ fs.writeFileSync('${outputPath.replace(/'/g, "\\'")}', JSON.stringify(args, null
     // Spawn with extra args after --
     const result = spawnSync(
       'node',
-      [SHELL_RUNNER, 'run', 'arg-printer', '--', '--override', 'true'],
+      ['--import', 'tsx/esm', SHELL_RUNNER, 'run', 'arg-printer', '--', '--override', 'true'],
       {
         env: {
           ...process.env,
