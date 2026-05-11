@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { join } from 'node:path';
 import {
   displayNoModulesMessage,
   displayMissingEnvMessage,
@@ -43,7 +44,7 @@ describe('degradation messages', () => {
       const logger = new Logger(false);
       displayNoModulesMessage('/Users/test/.ai', logger);
 
-      expect(stderrOutput).toContain('/Users/test/.ai/modules');
+      expect(stderrOutput).toContain(join('/Users/test/.ai', 'modules'));
     });
 
     it('should display getting-started instructions', () => {
