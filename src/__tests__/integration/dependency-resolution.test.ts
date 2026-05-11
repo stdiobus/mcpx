@@ -556,147 +556,155 @@ describe('Integration: Dependency Resolution', () => {
   });
 
   describe('Version conflict: A needs B@1.0, C needs B@2.0', () => {
-    it('reports version conflict with both versions and requiring modules', async () => {
-      suppressOutput();
+    it(
+      'reports version conflict with both versions and requiring modules',
+      async () => {
+        suppressOutput();
 
-      // Create registry with module-b at version 1.0.0
-      const conflictModules = new Map<string, RegistryEntry>();
-      conflictModules.set('conflict-b', {
-        id: 'conflict-b',
-        name: 'Conflict B',
-        description: 'Module with version conflict',
-        gitUrl: 'file:///fake',
-        latestVersion: '1.0.0',
-        runtimes: ['nodejs'],
-        publishedAt: '2024-01-01T00:00:00Z',
-      });
-      conflictModules.set('conflict-c', {
-        id: 'conflict-c',
-        name: 'Conflict C',
-        description: 'Module C that needs B@2.0.0',
-        gitUrl: 'file:///fake',
-        latestVersion: '1.0.0',
-        runtimes: ['nodejs'],
-        publishedAt: '2024-01-01T00:00:00Z',
-      });
+        // Create registry with module-b at version 1.0.0
+        const conflictModules = new Map<string, RegistryEntry>();
+        conflictModules.set('conflict-b', {
+          id: 'conflict-b',
+          name: 'Conflict B',
+          description: 'Module with version conflict',
+          gitUrl: 'file:///fake',
+          latestVersion: '1.0.0',
+          runtimes: ['nodejs'],
+          publishedAt: '2024-01-01T00:00:00Z',
+        });
+        conflictModules.set('conflict-c', {
+          id: 'conflict-c',
+          name: 'Conflict C',
+          description: 'Module C that needs B@2.0.0',
+          gitUrl: 'file:///fake',
+          latestVersion: '1.0.0',
+          runtimes: ['nodejs'],
+          publishedAt: '2024-01-01T00:00:00Z',
+        });
 
-      const { server: conflictServer, baseUrl: conflictBaseUrl } =
-        await createMockRegistryServer(conflictModules);
+        const { server: conflictServer, baseUrl: conflictBaseUrl } =
+          await createMockRegistryServer(conflictModules);
 
-      try {
-        const conflictClient = createHttpRegistryClient(conflictBaseUrl);
-
-        // Scenario: Root module A depends on both conflict-b@1.0.0 and conflict-c@1.0.0
-        // After resolving, conflict-b is resolved at version 1.0.0.
-        // Now if we simulate that conflict-c also needs conflict-b but at version 2.0.0,
-        // we need to construct this as two separate resolution steps.
-        //
-        // Since the resolver creates nodes with empty deps from registry,
-        // we simulate the conflict by having the root require conflict-b at two
-        // different versions indirectly.
-        //
-        // Direct approach: root requires conflict-b@2.0.0 but registry has 1.0.0
-        const rootNeedsV2: DependencyNode = {
-          id: 'module-a',
-          version: '1.0.0',
-          dependencies: { 'conflict-b': '2.0.0' },
-        };
-
-        // Registry has conflict-b@1.0.0, but root requires 2.0.0 → ConflictError
-        let error: ConflictError | null = null;
         try {
-          await resolveDependencies(rootNeedsV2, conflictClient);
-        } catch (e) {
-          error = e as ConflictError;
+          const conflictClient = createHttpRegistryClient(conflictBaseUrl);
+
+          // Scenario: Root module A depends on both conflict-b@1.0.0 and conflict-c@1.0.0
+          // After resolving, conflict-b is resolved at version 1.0.0.
+          // Now if we simulate that conflict-c also needs conflict-b but at version 2.0.0,
+          // we need to construct this as two separate resolution steps.
+          //
+          // Since the resolver creates nodes with empty deps from registry,
+          // we simulate the conflict by having the root require conflict-b at two
+          // different versions indirectly.
+          //
+          // Direct approach: root requires conflict-b@2.0.0 but registry has 1.0.0
+          const rootNeedsV2: DependencyNode = {
+            id: 'module-a',
+            version: '1.0.0',
+            dependencies: { 'conflict-b': '2.0.0' },
+          };
+
+          // Registry has conflict-b@1.0.0, but root requires 2.0.0 → ConflictError
+          let error: ConflictError | null = null;
+          try {
+            await resolveDependencies(rootNeedsV2, conflictClient);
+          } catch (e) {
+            error = e as ConflictError;
+          }
+
+          expect(error).toBeInstanceOf(ConflictError);
+          expect(error!.dependencyId).toBe('conflict-b');
+          expect(error!.existingVersion).toBe('1.0.0');
+          expect(error!.requestedVersion).toBe('2.0.0');
+          expect(error!.message).toContain('conflict-b');
+          expect(error!.message).toContain('1.0.0');
+          expect(error!.message).toContain('2.0.0');
+
+          // More realistic scenario: Two modules in the same resolution require
+          // the same dep at different versions. We simulate this by first resolving
+          // conflict-b@1.0.0 (from module-a), then having module-c require conflict-b@2.0.0.
+          //
+          // Since the resolver processes all deps of root first, we can create a root
+          // that has already resolved conflict-b@1.0.0, then process a second node
+          // that requires conflict-b@2.0.0.
+          //
+          // The resolver handles this in a single pass: if root depends on both
+          // conflict-b@1.0.0 and something that also depends on conflict-b@2.0.0.
+          // But since registry returns empty deps, we test the simpler case:
+          // root depends on conflict-b@1.0.0 first, then also requires conflict-b@2.0.0
+          // (which would be caught as a conflict within the same resolution).
+
+          // This is effectively tested above. Let's also verify the error message
+          // contains both the requiring module info:
+          expect(error!.message).toContain('registry'); // existingRequiredBy
+          expect(error!.message).toContain('module-a'); // requestedBy
+        } finally {
+          await new Promise<void>((resolve) => conflictServer.close(() => resolve()));
         }
+      },
+      30_000,
+    );
 
-        expect(error).toBeInstanceOf(ConflictError);
-        expect(error!.dependencyId).toBe('conflict-b');
-        expect(error!.existingVersion).toBe('1.0.0');
-        expect(error!.requestedVersion).toBe('2.0.0');
-        expect(error!.message).toContain('conflict-b');
-        expect(error!.message).toContain('1.0.0');
-        expect(error!.message).toContain('2.0.0');
+    it(
+      'reports conflict when two sibling deps require different versions',
+      async () => {
+        suppressOutput();
 
-        // More realistic scenario: Two modules in the same resolution require
-        // the same dep at different versions. We simulate this by first resolving
-        // conflict-b@1.0.0 (from module-a), then having module-c require conflict-b@2.0.0.
-        //
-        // Since the resolver processes all deps of root first, we can create a root
-        // that has already resolved conflict-b@1.0.0, then process a second node
-        // that requires conflict-b@2.0.0.
-        //
-        // The resolver handles this in a single pass: if root depends on both
-        // conflict-b@1.0.0 and something that also depends on conflict-b@2.0.0.
-        // But since registry returns empty deps, we test the simpler case:
-        // root depends on conflict-b@1.0.0 first, then also requires conflict-b@2.0.0
-        // (which would be caught as a conflict within the same resolution).
+        // Create a registry where conflict-shared exists at version 1.0.0
+        const siblingModules = new Map<string, RegistryEntry>();
+        siblingModules.set('conflict-shared', {
+          id: 'conflict-shared',
+          name: 'Shared Dep',
+          description: 'Shared dependency',
+          gitUrl: 'file:///fake',
+          latestVersion: '1.0.0',
+          runtimes: ['nodejs'],
+          publishedAt: '2024-01-01T00:00:00Z',
+        });
 
-        // This is effectively tested above. Let's also verify the error message
-        // contains both the requiring module info:
-        expect(error!.message).toContain('registry'); // existingRequiredBy
-        expect(error!.message).toContain('module-a'); // requestedBy
-      } finally {
-        await new Promise<void>((resolve) => conflictServer.close(() => resolve()));
-      }
-    });
+        const { server: sibServer, baseUrl: sibBaseUrl } =
+          await createMockRegistryServer(siblingModules);
 
-    it('reports conflict when two sibling deps require different versions', async () => {
-      suppressOutput();
-
-      // Create a registry where conflict-shared exists at version 1.0.0
-      const siblingModules = new Map<string, RegistryEntry>();
-      siblingModules.set('conflict-shared', {
-        id: 'conflict-shared',
-        name: 'Shared Dep',
-        description: 'Shared dependency',
-        gitUrl: 'file:///fake',
-        latestVersion: '1.0.0',
-        runtimes: ['nodejs'],
-        publishedAt: '2024-01-01T00:00:00Z',
-      });
-
-      const { server: sibServer, baseUrl: sibBaseUrl } =
-        await createMockRegistryServer(siblingModules);
-
-      try {
-        const sibClient = createHttpRegistryClient(sibBaseUrl);
-
-        // Root depends on conflict-shared@1.0.0 (matches registry)
-        // Then we simulate a second resolver call where another module needs @2.0.0
-        const rootNode: DependencyNode = {
-          id: 'parent-a',
-          version: '1.0.0',
-          dependencies: { 'conflict-shared': '1.0.0' },
-        };
-
-        // First resolution succeeds
-        const resolved = await resolveDependencies(rootNode, sibClient);
-        expect(resolved).toHaveLength(1);
-        expect(resolved[0].version).toBe('1.0.0');
-
-        // Second module requires conflict-shared@2.0.0 — conflict with registry
-        const secondNode: DependencyNode = {
-          id: 'parent-b',
-          version: '1.0.0',
-          dependencies: { 'conflict-shared': '2.0.0' },
-        };
-
-        let error: ConflictError | null = null;
         try {
-          await resolveDependencies(secondNode, sibClient);
-        } catch (e) {
-          error = e as ConflictError;
-        }
+          const sibClient = createHttpRegistryClient(sibBaseUrl);
 
-        expect(error).toBeInstanceOf(ConflictError);
-        expect(error!.dependencyId).toBe('conflict-shared');
-        // Error message should list both versions
-        expect(error!.message).toContain('1.0.0');
-        expect(error!.message).toContain('2.0.0');
-      } finally {
-        await new Promise<void>((resolve) => sibServer.close(() => resolve()));
-      }
-    });
+          // Root depends on conflict-shared@1.0.0 (matches registry)
+          // Then we simulate a second resolver call where another module needs @2.0.0
+          const rootNode: DependencyNode = {
+            id: 'parent-a',
+            version: '1.0.0',
+            dependencies: { 'conflict-shared': '1.0.0' },
+          };
+
+          // First resolution succeeds
+          const resolved = await resolveDependencies(rootNode, sibClient);
+          expect(resolved).toHaveLength(1);
+          expect(resolved[0].version).toBe('1.0.0');
+
+          // Second module requires conflict-shared@2.0.0 — conflict with registry
+          const secondNode: DependencyNode = {
+            id: 'parent-b',
+            version: '1.0.0',
+            dependencies: { 'conflict-shared': '2.0.0' },
+          };
+
+          let error: ConflictError | null = null;
+          try {
+            await resolveDependencies(secondNode, sibClient);
+          } catch (e) {
+            error = e as ConflictError;
+          }
+
+          expect(error).toBeInstanceOf(ConflictError);
+          expect(error!.dependencyId).toBe('conflict-shared');
+          // Error message should list both versions
+          expect(error!.message).toContain('1.0.0');
+          expect(error!.message).toContain('2.0.0');
+        } finally {
+          await new Promise<void>((resolve) => sibServer.close(() => resolve()));
+        }
+      },
+      30_000,
+    );
   });
 });
