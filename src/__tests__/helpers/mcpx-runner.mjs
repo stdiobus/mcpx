@@ -14,7 +14,7 @@
  */
 
 import { resolve, dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { existsSync, readFileSync } from 'node:fs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,11 +23,16 @@ const __dirname = dirname(__filename);
 // Import directly from TypeScript source via tsx loader
 const srcRoot = resolve(__dirname, '../../');
 
+/** Convert a file path to a URL string for cross-platform dynamic import */
+function toImportPath(filePath) {
+  return pathToFileURL(filePath).href;
+}
+
 const { McpxError, ManifestError, RuntimeError, EnvironmentError, EXIT_CODES } = await import(
-  join(srcRoot, 'core/errors.ts')
+  toImportPath(join(srcRoot, 'core/errors.ts'))
 );
-const { resolveRoot, resolveModuleById } = await import(join(srcRoot, 'core/resolver.ts'));
-const { validateManifest } = await import(join(srcRoot, 'core/manifest.ts'));
+const { resolveRoot, resolveModuleById } = await import(toImportPath(join(srcRoot, 'core/resolver.ts')));
+const { validateManifest } = await import(toImportPath(join(srcRoot, 'core/manifest.ts')));
 
 /**
  * Main CLI logic — resolves module, validates manifest, checks runtime.

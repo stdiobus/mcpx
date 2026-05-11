@@ -22,7 +22,7 @@
  */
 
 import { resolve, dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { existsSync, readFileSync } from 'node:fs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -31,10 +31,12 @@ const __dirname = dirname(__filename);
 // Import from TypeScript source via tsx loader
 const srcRoot = resolve(__dirname, '../../');
 
-const { McpxError, RuntimeError } = await import(join(srcRoot, 'core/errors.ts'));
-const { resolveRoot, resolveModuleById } = await import(join(srcRoot, 'core/resolver.ts'));
-const { validateManifest } = await import(join(srcRoot, 'core/manifest.ts'));
-const { execModule } = await import(join(srcRoot, 'platform/exec.ts'));
+function toImportPath(p) { return pathToFileURL(p).href; }
+
+const { McpxError, RuntimeError } = await import(toImportPath(join(srcRoot, 'core/errors.ts')));
+const { resolveRoot, resolveModuleById } = await import(toImportPath(join(srcRoot, 'core/resolver.ts')));
+const { validateManifest } = await import(toImportPath(join(srcRoot, 'core/manifest.ts')));
+const { execModule } = await import(toImportPath(join(srcRoot, 'platform/exec.ts')));
 
 function main() {
   const args = process.argv.slice(2);

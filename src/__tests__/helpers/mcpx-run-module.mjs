@@ -19,7 +19,7 @@
  */
 
 import { resolve, dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { existsSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
@@ -29,19 +29,21 @@ const __dirname = dirname(__filename);
 // Import from TypeScript source via tsx loader
 const srcRoot = resolve(__dirname, '../../');
 
+function toImportPath(p) { return pathToFileURL(p).href; }
+
 const { McpxError, ManifestError, RuntimeError, EnvironmentError } = await import(
-  join(srcRoot, 'core/errors.ts')
+  toImportPath(join(srcRoot, 'core/errors.ts'))
 );
-const { resolveRoot, resolveModuleById } = await import(join(srcRoot, 'core/resolver.ts'));
-const { validateManifest } = await import(join(srcRoot, 'core/manifest.ts'));
-const { loadEnvironment } = await import(join(srcRoot, 'core/env-loader.ts'));
-const { Logger } = await import(join(srcRoot, 'core/logger.ts'));
-const { PythonPlugin } = await import(join(srcRoot, 'runtimes/python.ts'));
-const { NodejsPlugin } = await import(join(srcRoot, 'runtimes/nodejs.ts'));
-const { ShellPlugin } = await import(join(srcRoot, 'runtimes/shell.ts'));
-const { GoPlugin } = await import(join(srcRoot, 'runtimes/go.ts'));
-const { RustPlugin } = await import(join(srcRoot, 'runtimes/rust.ts'));
-const { DockerPlugin } = await import(join(srcRoot, 'runtimes/docker.ts'));
+const { resolveRoot, resolveModuleById } = await import(toImportPath(join(srcRoot, 'core/resolver.ts')));
+const { validateManifest } = await import(toImportPath(join(srcRoot, 'core/manifest.ts')));
+const { loadEnvironment } = await import(toImportPath(join(srcRoot, 'core/env-loader.ts')));
+const { Logger } = await import(toImportPath(join(srcRoot, 'core/logger.ts')));
+const { PythonPlugin } = await import(toImportPath(join(srcRoot, 'runtimes/python.ts')));
+const { NodejsPlugin } = await import(toImportPath(join(srcRoot, 'runtimes/nodejs.ts')));
+const { ShellPlugin } = await import(toImportPath(join(srcRoot, 'runtimes/shell.ts')));
+const { GoPlugin } = await import(toImportPath(join(srcRoot, 'runtimes/go.ts')));
+const { RustPlugin } = await import(toImportPath(join(srcRoot, 'runtimes/rust.ts')));
+const { DockerPlugin } = await import(toImportPath(join(srcRoot, 'runtimes/docker.ts')));
 
 /**
  * Runtime plugin instances keyed by runtime name.

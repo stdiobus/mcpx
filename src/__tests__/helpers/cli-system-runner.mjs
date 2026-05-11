@@ -26,7 +26,7 @@
  */
 
 import { resolve, dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { existsSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
@@ -36,24 +36,26 @@ const __dirname = dirname(__filename);
 // Import from TypeScript source via tsx loader
 const srcRoot = resolve(__dirname, '../../');
 
-const { McpxError } = await import(join(srcRoot, 'core/errors.ts'));
-const { resolveRoot, resolveModuleById } = await import(join(srcRoot, 'core/resolver.ts'));
-const { validateManifest } = await import(join(srcRoot, 'core/manifest.ts'));
-const { loadEnvironment } = await import(join(srcRoot, 'core/env-loader.ts'));
-const { Logger } = await import(join(srcRoot, 'core/logger.ts'));
-const { parseArgs, KNOWN_COMMANDS } = await import(join(srcRoot, 'cli/parser.ts'));
-const { listCommand } = await import(join(srcRoot, 'cli/commands/list.ts'));
-const { doctorCommand } = await import(join(srcRoot, 'cli/commands/doctor.ts'));
-const { envCommand } = await import(join(srcRoot, 'cli/commands/env.ts'));
+function toImportPath(p) { return pathToFileURL(p).href; }
+
+const { McpxError } = await import(toImportPath(join(srcRoot, 'core/errors.ts')));
+const { resolveRoot, resolveModuleById } = await import(toImportPath(join(srcRoot, 'core/resolver.ts')));
+const { validateManifest } = await import(toImportPath(join(srcRoot, 'core/manifest.ts')));
+const { loadEnvironment } = await import(toImportPath(join(srcRoot, 'core/env-loader.ts')));
+const { Logger } = await import(toImportPath(join(srcRoot, 'core/logger.ts')));
+const { parseArgs, KNOWN_COMMANDS } = await import(toImportPath(join(srcRoot, 'cli/parser.ts')));
+const { listCommand } = await import(toImportPath(join(srcRoot, 'cli/commands/list.ts')));
+const { doctorCommand } = await import(toImportPath(join(srcRoot, 'cli/commands/doctor.ts')));
+const { envCommand } = await import(toImportPath(join(srcRoot, 'cli/commands/env.ts')));
 
 // Register runtime plugins
-const { registerPlugin } = await import(join(srcRoot, 'runtimes/registry.ts'));
-const { NodejsPlugin } = await import(join(srcRoot, 'runtimes/nodejs.ts'));
-const { PythonPlugin } = await import(join(srcRoot, 'runtimes/python.ts'));
-const { GoPlugin } = await import(join(srcRoot, 'runtimes/go.ts'));
-const { RustPlugin } = await import(join(srcRoot, 'runtimes/rust.ts'));
-const { ShellPlugin } = await import(join(srcRoot, 'runtimes/shell.ts'));
-const { DockerPlugin } = await import(join(srcRoot, 'runtimes/docker.ts'));
+const { registerPlugin } = await import(toImportPath(join(srcRoot, 'runtimes/registry.ts')));
+const { NodejsPlugin } = await import(toImportPath(join(srcRoot, 'runtimes/nodejs.ts')));
+const { PythonPlugin } = await import(toImportPath(join(srcRoot, 'runtimes/python.ts')));
+const { GoPlugin } = await import(toImportPath(join(srcRoot, 'runtimes/go.ts')));
+const { RustPlugin } = await import(toImportPath(join(srcRoot, 'runtimes/rust.ts')));
+const { ShellPlugin } = await import(toImportPath(join(srcRoot, 'runtimes/shell.ts')));
+const { DockerPlugin } = await import(toImportPath(join(srcRoot, 'runtimes/docker.ts')));
 
 registerPlugin('nodejs', new NodejsPlugin());
 registerPlugin('python', new PythonPlugin());
@@ -199,7 +201,7 @@ async function main() {
         }
 
         // Build runtime command
-        const { NodejsPlugin: NP } = await import(join(srcRoot, 'runtimes/nodejs.ts'));
+        const { NodejsPlugin: NP } = await import(toImportPath(join(srcRoot, 'runtimes/nodejs.ts')));
         const plugin = new NP();
         const resolvedModule = {
           manifest: { ...manifest, env: envResult.env },

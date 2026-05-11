@@ -20,7 +20,7 @@
  */
 
 import { resolve, dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { existsSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
@@ -30,13 +30,15 @@ const __dirname = dirname(__filename);
 // Import from TypeScript source via tsx loader
 const srcRoot = resolve(__dirname, '../../');
 
+function toImportPath(p) { return pathToFileURL(p).href; }
+
 const { McpxError, ManifestError, RuntimeError, EnvironmentError } = await import(
-  join(srcRoot, 'core/errors.ts')
+  toImportPath(join(srcRoot, 'core/errors.ts'))
 );
-const { resolveRoot, resolveModuleById } = await import(join(srcRoot, 'core/resolver.ts'));
-const { validateManifest } = await import(join(srcRoot, 'core/manifest.ts'));
-const { loadEnvironment } = await import(join(srcRoot, 'core/env-loader.ts'));
-const { Logger } = await import(join(srcRoot, 'core/logger.ts'));
+const { resolveRoot, resolveModuleById } = await import(toImportPath(join(srcRoot, 'core/resolver.ts')));
+const { validateManifest } = await import(toImportPath(join(srcRoot, 'core/manifest.ts')));
+const { loadEnvironment } = await import(toImportPath(join(srcRoot, 'core/env-loader.ts')));
+const { Logger } = await import(toImportPath(join(srcRoot, 'core/logger.ts')));
 
 /**
  * Parse CLI arguments, extracting module ID and extra args after --.

@@ -15,7 +15,7 @@
  */
 
 import { resolve, dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -23,8 +23,10 @@ const __dirname = dirname(__filename);
 // Import from TypeScript source via tsx loader
 const srcRoot = resolve(__dirname, '../../');
 
-const { publishCommand } = await import(join(srcRoot, 'cli/commands/publish.ts'));
-const { HttpRegistryClient } = await import(join(srcRoot, 'registry/client.ts'));
+function toImportPath(p) { return pathToFileURL(p).href; }
+
+const { publishCommand } = await import(toImportPath(join(srcRoot, 'cli/commands/publish.ts')));
+const { HttpRegistryClient } = await import(toImportPath(join(srcRoot, 'registry/client.ts')));
 
 /**
  * Main CLI logic — parses args and invokes publishCommand.

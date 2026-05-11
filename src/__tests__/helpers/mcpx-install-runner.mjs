@@ -14,7 +14,7 @@
  */
 
 import { resolve, dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -22,10 +22,12 @@ const __dirname = dirname(__filename);
 // Import from TypeScript source via tsx loader
 const srcRoot = resolve(__dirname, '../../');
 
-const { installCommand } = await import(join(srcRoot, 'cli/commands/install.ts'));
-const { HttpRegistryClient } = await import(join(srcRoot, 'registry/client.ts'));
-const { Logger } = await import(join(srcRoot, 'core/logger.ts'));
-const { resolveRoot } = await import(join(srcRoot, 'core/resolver.ts'));
+function toImportPath(p) { return pathToFileURL(p).href; }
+
+const { installCommand } = await import(toImportPath(join(srcRoot, 'cli/commands/install.ts')));
+const { HttpRegistryClient } = await import(toImportPath(join(srcRoot, 'registry/client.ts')));
+const { Logger } = await import(toImportPath(join(srcRoot, 'core/logger.ts')));
+const { resolveRoot } = await import(toImportPath(join(srcRoot, 'core/resolver.ts')));
 
 /**
  * Main CLI logic — parses args and invokes installCommand.

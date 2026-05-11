@@ -257,7 +257,7 @@ describe('Integration: Registry Install Flow', () => {
       expect(existsSync(entryFilePath)).toBe(true);
 
       const installedEntryContent = readFileSync(entryFilePath, 'utf-8');
-      expect(installedEntryContent).toBe(entryContent);
+      expect(installedEntryContent.replace(/\r\n/g, '\n')).toBe(entryContent.replace(/\r\n/g, '\n'));
     });
   });
 
