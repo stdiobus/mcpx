@@ -405,6 +405,7 @@ const stdioResult = await new Promise((resolvePromise) => {
   const child = spawnCb(mcpxBin, ['run', 'stdio-probe'], {
     stdio: ['pipe', 'pipe', 'pipe'],
     env: { ...process.env, MCPX_ROOT: moduleRoot },
+    shell: true,
   });
 
   const stdoutChunks = [];
