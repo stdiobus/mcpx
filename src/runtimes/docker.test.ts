@@ -8,6 +8,7 @@
  */
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { resolve, join } from 'node:path';
 import type { ResolvedModule } from '../core/manifest.js';
 
 // Mock child_process
@@ -59,6 +60,7 @@ describe('DockerPlugin', () => {
   });
 
   describe('buildCommand', () => {
+    const MODULE_DIR = resolve('/tmp/test-module');
     const makeModule = (entry: string, args?: string[]): ResolvedModule => ({
       manifest: {
         id: 'my-docker-module',
@@ -67,8 +69,8 @@ describe('DockerPlugin', () => {
         entry,
         args,
       },
-      dir: '/path/to/module',
-      manifestPath: '/path/to/module/module.json',
+      dir: MODULE_DIR,
+      manifestPath: join(MODULE_DIR, 'module.json'),
     });
 
     it('uses docker run --rm -i with image from entry', () => {
@@ -133,7 +135,7 @@ describe('DockerPlugin', () => {
       const module = makeModule('my-mcp-server:latest');
       const result = plugin.buildCommand(module);
 
-      expect(result.cwd).toBe('/path/to/module');
+      expect(result.cwd).toBe(MODULE_DIR);
     });
 
     it('returns empty env object (env passed via -e flags, not process env)', () => {

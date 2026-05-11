@@ -5,6 +5,7 @@
  */
 
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { resolve } from 'node:path';
 import type { SpawnSyncReturns } from 'node:child_process';
 import type { ExecDescriptor } from '../runtimes/plugin.js';
 import { RuntimeError } from '../core/errors.js';
@@ -56,7 +57,7 @@ describe('execModuleWithEarlyExitDetection', () => {
     return {
       command: 'node',
       args: ['server.js'],
-      cwd: '/path/to/module',
+      cwd: resolve('/tmp/test-module'),
       env: { NODE_ENV: 'production' },
       ...overrides,
     };

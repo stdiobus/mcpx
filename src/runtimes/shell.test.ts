@@ -8,6 +8,7 @@
  */
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { resolve, join } from 'node:path';
 import { RuntimeError } from '../core/errors.js';
 import type { ResolvedModule } from '../core/manifest.js';
 
@@ -88,8 +89,8 @@ describe('ShellPlugin', () => {
         entry,
         args,
       },
-      dir: '/path/to/module',
-      manifestPath: '/path/to/module/module.json',
+      dir: resolve('/tmp/test-module'),
+      manifestPath: join(resolve('/tmp/test-module'), 'module.json'),
     });
 
     it('uses /bin/sh to execute entry file', () => {
@@ -127,7 +128,7 @@ describe('ShellPlugin', () => {
       const module = makeModule('server.sh');
       const result = plugin.buildCommand(module);
 
-      expect(result.cwd).toBe('/path/to/module');
+      expect(result.cwd).toBe(resolve('/tmp/test-module'));
     });
 
     it('returns empty env object', () => {

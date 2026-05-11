@@ -4,6 +4,7 @@
  */
 
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { resolve, join } from 'node:path';
 import { RuntimeError, ManifestError } from '../core/errors.js';
 import type { ResolvedModule } from '../core/manifest.js';
 
@@ -23,7 +24,9 @@ const { NodejsPlugin } = await import('./nodejs.js');
 const mockExecFileSync = jest.mocked(childProcess.execFileSync);
 const mockExistsSync = jest.mocked(fs.existsSync);
 
-function makeModule(overrides: Partial<ResolvedModule['manifest']> = {}, dir = '/path/to/module'): ResolvedModule {
+const MODULE_DIR = resolve('/tmp/test-module');
+
+function makeModule(overrides: Partial<ResolvedModule['manifest']> = {}, dir = MODULE_DIR): ResolvedModule {
   return {
     manifest: {
       id: 'test-module',
@@ -33,7 +36,7 @@ function makeModule(overrides: Partial<ResolvedModule['manifest']> = {}, dir = '
       ...overrides,
     },
     dir,
-    manifestPath: `${dir}/module.json`,
+    manifestPath: join(dir, 'module.json'),
   };
 }
 
@@ -109,11 +112,12 @@ describe('NodejsPlugin', () => {
     });
 
     it('sets cwd to module directory (R6.3)', () => {
-      const module = makeModule({ entry: 'server.ts' }, '/my/module/dir');
+      const customDir = resolve('/tmp/my-module-dir');
+      const module = makeModule({ entry: 'server.ts' }, customDir);
 
       const result = plugin.buildCommand(module);
 
-      expect(result.cwd).toBe('/my/module/dir');
+      expect(result.cwd).toBe(customDir);
     });
 
     it('includes manifest args after entry (R6.1)', () => {
@@ -162,11 +166,12 @@ describe('NodejsPlugin', () => {
     });
 
     it('sets cwd to module directory (R6.3)', () => {
-      const module = makeModule({ entry: 'server.js' }, '/another/dir');
+      const customDir = resolve('/tmp/another-dir');
+      const module = makeModule({ entry: 'server.js' }, customDir);
 
       const result = plugin.buildCommand(module);
 
-      expect(result.cwd).toBe('/another/dir');
+      expect(result.cwd).toBe(customDir);
     });
 
     it('includes manifest args after entry', () => {
@@ -243,7 +248,7 @@ describe('NodejsPlugin', () => {
     it('throws RuntimeError when entry file does not exist', () => {
       mockExistsSync.mockReturnValue(false);
 
-      const module = makeModule({ entry: 'missing.ts' }, '/path/to/module');
+      const module = makeModule({ entry: 'missing.ts' });
 
       expect(() => plugin.buildCommand(module)).toThrow(RuntimeError);
       expect(() => plugin.buildCommand(module)).toThrow(/Entry file not found/);
@@ -252,14 +257,15 @@ describe('NodejsPlugin', () => {
     it('includes the resolved path in the error message', () => {
       mockExistsSync.mockReturnValue(false);
 
-      const module = makeModule({ entry: 'src/index.ts' }, '/my/module');
+      const testDir = resolve('/tmp/my-module');
+      const module = makeModule({ entry: 'src/index.ts' }, testDir);
 
       try {
         plugin.buildCommand(module);
         throw new Error('Should have thrown');
       } catch (err) {
         expect(err).toBeInstanceOf(RuntimeError);
-        expect((err as RuntimeError).message).toContain('/my/module/src/index.ts');
+        expect((err as RuntimeError).message).toContain(resolve(testDir, 'src/index.ts'));
       }
     });
   });
