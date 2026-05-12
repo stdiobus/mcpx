@@ -1,6 +1,6 @@
 {
   "name": "@stdiobus/mcpx",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "description": "Universal modular launcher for MCP servers — TypeScript CLI",
   "type": "module",
   "bin": {
