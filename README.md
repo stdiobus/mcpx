@@ -240,7 +240,7 @@ EMPTY_VAR=
 | `MCPX_DEBUG`  | Set to `1` to enable verbose diagnostic output  |
 | `MCPX_ARGS`   | Additional arguments (POSIX shell quoting rules) |
 
-### Env Template Expressions (v2)
+### Env Template Expressions
 
 ```json
 {
@@ -313,7 +313,7 @@ EMPTY_VAR=
 | 3    | Runtime error (tool not installed, exec failed)      |
 | 4    | Environment error (required variable missing)        |
 
-## Registry Commands (v3)
+## Registry Commands
 
 ```bash
 mcpx install <module-name>    # Install from registry
