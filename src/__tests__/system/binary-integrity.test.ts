@@ -17,13 +17,13 @@ import { resolve, dirname } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { tsxEsmNodeArgs } from '../helpers/tsx-node-args.js';
+import { findPackageRoot } from '../helpers/package-root.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-/** Root of the packages/mcpx directory */
-// __dirname = <repo>/src/__tests__/system → go up 3 levels to reach repo root.
-const PACKAGE_ROOT = resolve(__dirname, '../../..');
+/** Root of the package directory */
+const PACKAGE_ROOT = findPackageRoot(__dirname);
 
 /** Path to the bin/mcpx shim */
 const BIN_MCPX = resolve(PACKAGE_ROOT, 'bin/mcpx.js');

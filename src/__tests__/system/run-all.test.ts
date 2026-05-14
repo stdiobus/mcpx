@@ -19,15 +19,15 @@ import { readdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { findPackageRoot } from '../helpers/package-root.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-/** Root of the packages/mcpx directory. */
-// __dirname = <repo>/src/__tests__/system → go up 3 levels to reach repo root.
-const MCPX_ROOT = resolve(__dirname, '../../..');
+/** Root of the package directory. */
+const MCPX_ROOT = findPackageRoot(__dirname);
 
 /** Timeout for build/test commands (5 minutes). */
 const COMMAND_TIMEOUT = 300_000;
