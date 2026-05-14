@@ -350,16 +350,20 @@ with open(os.environ["PROBE_OUTPUT"], "w") as f:
       const moduleDir = join(modulesDir, 'shell-wrapper');
       mkdirSync(moduleDir, { recursive: true });
 
-      // Create a "binary" that the shell script will call
+      // Create a "binary" that the module will call (cross-platform)
       const binDir = join(moduleDir, 'bin');
       mkdirSync(binDir, { recursive: true });
 
-      const binaryScript = `#!/bin/sh
-# Simulated binary that writes its env and args to output
-printf '{"called_from": "%s", "wrapper_var": "%s", "args": "%s"}' "$(pwd)" "$WRAPPER_VAR" "$*"
+      const toolScript = `
+import { writeFileSync } from 'node:fs';
+// Print a JSON object to stdout for the wrapper to capture.
+process.stdout.write(JSON.stringify({
+  called_from: process.cwd(),
+  wrapper_var: process.env.WRAPPER_VAR ?? '',
+  args: process.argv.slice(2).join(' '),
+}));
 `;
-      writeFileSync(join(binDir, 'my-tool'), binaryScript, 'utf-8');
-      chmodSync(join(binDir, 'my-tool'), 0o755);
+      writeFileSync(join(binDir, 'my-tool.mjs'), toolScript, 'utf-8');
 
       // Create module.json
       writeFileSync(
@@ -367,8 +371,8 @@ printf '{"called_from": "%s", "wrapper_var": "%s", "args": "%s"}' "$(pwd)" "$WRA
         JSON.stringify({
           id: 'shell-wrapper',
           name: 'Shell Wrapper Module',
-          runtime: 'shell',
-          entry: 'wrapper.sh',
+          runtime: 'nodejs',
+          entry: 'wrapper.mjs',
           env: {
             WRAPPER_VAR: 'wrapper-value',
           },
@@ -376,25 +380,31 @@ printf '{"called_from": "%s", "wrapper_var": "%s", "args": "%s"}' "$(pwd)" "$WRA
         'utf-8',
       );
 
-      // Create wrapper.sh that calls the binary and writes output
-      const wrapperSh = `#!/bin/sh
-# Shell wrapper that calls a local binary
-OUTPUT_FILE="${outputPath}"
+      // Create wrapper.mjs that calls the tool script and writes output
+      const wrapperJs = `
+import { writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
 
-# Call the local binary and capture its output
-BINARY_OUTPUT=$(./bin/my-tool --serve --port 8080)
+const outputPath = ${JSON.stringify(outputPath)};
+const toolPath = join(process.cwd(), 'bin', 'my-tool.mjs');
 
-# Write combined output
-printf '{\\n' > "$OUTPUT_FILE"
-printf '  "pid": %s,\\n' "$$" >> "$OUTPUT_FILE"
-printf '  "cwd": "%s",\\n' "$(pwd)" >> "$OUTPUT_FILE"
-printf '  "wrapper_var": "%s",\\n' "$WRAPPER_VAR" >> "$OUTPUT_FILE"
-printf '  "binary_output": %s,\\n' "$BINARY_OUTPUT" >> "$OUTPUT_FILE"
-printf '  "binary_exists": true\\n' >> "$OUTPUT_FILE"
-printf '}\\n' >> "$OUTPUT_FILE"
+const binaryOut = execFileSync(process.execPath, [toolPath, '--serve', '--port', '8080'], {
+  encoding: 'utf-8',
+  env: process.env,
+});
+
+const output = {
+  pid: process.pid,
+  cwd: process.cwd(),
+  wrapper_var: process.env.WRAPPER_VAR ?? '',
+  binary_output: JSON.parse(binaryOut),
+  binary_exists: true,
+};
+
+writeFileSync(outputPath, JSON.stringify(output, null, 2));
 `;
-      writeFileSync(join(moduleDir, 'wrapper.sh'), wrapperSh, 'utf-8');
-      chmodSync(join(moduleDir, 'wrapper.sh'), 0o755);
+      writeFileSync(join(moduleDir, 'wrapper.mjs'), wrapperJs, 'utf-8');
 
       // Spawn mcpx
       const result = spawnMcpxModule('shell-wrapper', { MCPX_ROOT: root });
@@ -451,8 +461,8 @@ printf '}\\n' >> "$OUTPUT_FILE"
         JSON.stringify({
           id: 'env-templates',
           name: 'Env Templates Module',
-          runtime: 'shell',
-          entry: 'probe.sh',
+          runtime: 'nodejs',
+          entry: 'probe.mjs',
           env: {
             HOME_DIR: '$env:HOME',
             SECRET_VALUE: `$file:${secretFilePath}`,
@@ -462,13 +472,9 @@ printf '}\\n' >> "$OUTPUT_FILE"
         'utf-8',
       );
 
-      // Create probe.sh that dumps env to output file
-      const probeSh = `#!/bin/sh
-OUTPUT_FILE="${outputPath}"
-
-# Use node to produce proper JSON from env
-node -e "
-const fs = require('fs');
+      // Create probe.mjs that dumps env to output file
+      const probeJs = `
+import { writeFileSync } from 'node:fs';
 const output = {
   HOME_DIR: process.env.HOME_DIR || '',
   SECRET_VALUE: process.env.SECRET_VALUE || '',
@@ -476,11 +482,9 @@ const output = {
   pid: process.pid,
   cwd: process.cwd(),
 };
-fs.writeFileSync('${outputPath}', JSON.stringify(output, null, 2));
-"
+writeFileSync(${JSON.stringify(outputPath)}, JSON.stringify(output, null, 2));
 `;
-      writeFileSync(join(moduleDir, 'probe.sh'), probeSh, 'utf-8');
-      chmodSync(join(moduleDir, 'probe.sh'), 0o755);
+      writeFileSync(join(moduleDir, 'probe.mjs'), probeJs, 'utf-8');
 
       // Spawn mcpx
       const result = spawnMcpxModule('env-templates', { MCPX_ROOT: root });

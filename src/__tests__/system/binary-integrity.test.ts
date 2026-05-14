@@ -79,7 +79,7 @@ describe('System: Binary Integrity', () => {
       expect(firstLine).toBe('#!/usr/bin/env node');
     });
 
-    it('dist/index.js exists after build', () => {
+    it('out/dist/index.js exists after build', () => {
       expect(existsSync(DIST_INDEX)).toBe(true);
 
       // Verify it's a non-empty file
