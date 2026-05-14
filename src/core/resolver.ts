@@ -32,6 +32,7 @@ import { resolve, dirname, join } from 'node:path';
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import type { ModuleManifest, ResolvedModule } from './manifest.js';
+import { validateManifest } from './manifest.js';
 import { McpxError, ManifestError } from './errors.js';
 
 /**
@@ -278,10 +279,28 @@ export function resolveModuleById(moduleId: string, moduleRoot: string): Resolve
   const exactManifestPath = join(exactDir, 'module.json');
 
   if (existsSync(exactManifestPath)) {
-    const manifest = readManifestFile(exactManifestPath);
-    if (manifest) {
-      return { manifest, dir: exactDir, manifestPath: exactManifestPath };
+    // Important: if module.json exists but is invalid JSON, this is a manifest error,
+    // not "module not found". We parse explicitly here to preserve correct exit codes.
+    const raw = readFileSync(exactManifestPath, 'utf-8');
+    let parsed: ModuleManifest;
+    try {
+      parsed = JSON.parse(raw) as ModuleManifest;
+    } catch (err: unknown) {
+      throw new ManifestError(
+        `Invalid JSON in ${exactManifestPath}: ${(err as Error).message}`,
+        'Fix the JSON syntax in your module.json file',
+      );
     }
+    const validation = validateManifest(parsed);
+    if (!validation.valid) {
+      const msgs = validation.errors.map((e) => `  - ${e.field}: ${e.message}`).join('\n');
+      throw new ManifestError(
+        `Manifest validation failed in ${exactManifestPath}:\n${msgs}`,
+        'Fix required fields and types in your module.json file',
+      );
+    }
+
+    return { manifest: validation.manifest!, dir: exactDir, manifestPath: exactManifestPath };
   }
 
   // Step 2: Scan immediate subdirectories for matching id field

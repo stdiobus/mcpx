@@ -22,7 +22,6 @@ import { join, resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { tsxEsmNodeArgs } from '../helpers/tsx-node-args.js';
 
 // --- Test Runner Helper ---
 
@@ -30,9 +29,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
- * Path to the mcpx-runner.mjs script that exercises real mcpx code paths.
+ * Path to the real mcpx CLI entrypoint.
+ *
+ * Property tests must NOT depend on TS loaders (tsx) at runtime,
+ * because Node 18.x + tsx loader mode is not stable across versions.
  */
-const MCPX_RUNNER = resolve(__dirname, '../helpers/mcpx-runner.mjs');
+const MCPX_BIN = resolve(__dirname, '../../../bin/mcpx');
 
 /**
  * Spawns the mcpx runner as a real subprocess and returns the exit code.
@@ -58,7 +60,7 @@ function spawnMcpxRunner(
   }
 
   try {
-    const result = execFileSync('node', [...tsxEsmNodeArgs(), MCPX_RUNNER, ...args], {
+    const result = execFileSync('node', [MCPX_BIN, ...args], {
       env: spawnEnv,
       timeout: 15_000,
       stdio: ['pipe', 'pipe', 'pipe'],
