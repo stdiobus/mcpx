@@ -42,7 +42,7 @@ const STDIO_RUNNER = resolve(__dirname, '../helpers/stdio-runner.mjs');
 
 /** Path to the shell integration runner that handles env loading + args + exec. */
 const SHELL_RUNNER = resolve(__dirname, '../helpers/shell-integration-runner.mjs');
-const MCPX_BIN = resolve(__dirname, '../../../bin/mcpx');
+const MCPX_BIN = resolve(__dirname, '../../../bin/mcpx.js');
 
 /** Path to the mcpx-run-module runner that handles the full pipeline for any runtime. */
 const MCPX_RUN_MODULE = resolve(__dirname, '../helpers/mcpx-run-module.mjs');

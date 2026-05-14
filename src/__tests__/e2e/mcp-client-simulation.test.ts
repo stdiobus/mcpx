@@ -255,7 +255,7 @@ describe('E2E: MCP Client Simulation', () => {
       try {
         createEchoServerModule(testRoot);
 
-        // Replicate mcp.json: {"command": "node", "args": ["bin/mcpx", "run", "echo-server"], "env": {"CLIENT_TOKEN": "tok-abc"}}
+        // Replicate mcp.json: {"command": "node", "args": ["bin/mcpx.js", "run", "echo-server"], "env": {"CLIENT_TOKEN": "tok-abc"}}
         // Using mcpx-run-module.mjs which is the real compiled mcpx pipeline
         const config = {
           command: 'node',
@@ -484,7 +484,7 @@ describe('E2E: MCP Client Simulation', () => {
   });
 
   describe('Shorthand format', () => {
-    it('works with shorthand format: {"command": "node", "args": ["bin/mcpx", "echo-server"]}', async () => {
+    it('works with shorthand format: {"command": "node", "args": ["bin/mcpx.js", "echo-server"]}', async () => {
       const testRoot = realpathSync(mkdtempSync(join(tmpdir(), 'mcpx-e2e-short-')));
       try {
         createEchoServerModule(testRoot);

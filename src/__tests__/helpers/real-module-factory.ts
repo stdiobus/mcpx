@@ -206,7 +206,7 @@ export interface SpawnMcpxResult {
 export function spawnMcpx(args: string[], opts: SpawnMcpxOptions = {}): SpawnMcpxResult {
   const { env, cwd, stdin, timeout = 30_000 } = opts;
 
-  const mcpxBin = resolve(__dirname, '../../../bin/mcpx');
+  const mcpxBin = resolve(__dirname, '../../../bin/mcpx.js');
 
   // Merge environment: inherit current process env, overlay with provided env
   const spawnEnv: Record<string, string> = {

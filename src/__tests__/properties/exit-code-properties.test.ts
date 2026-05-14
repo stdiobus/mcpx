@@ -35,6 +35,9 @@ const __dirname = dirname(__filename);
  * because Node 18.x + tsx loader mode is not stable across versions.
  */
 const MCPX_BIN = resolve(__dirname, '../../../bin/mcpx');
+// In a `"type": "module"` package, the bin entry must have an extension.
+// Use the real bin shim file (not the package.json "bin" key) to avoid npm-resolution differences in tests.
+const MCPX_BIN_WITH_EXT = resolve(__dirname, '../../../bin/mcpx.js');
 
 /**
  * Spawns the mcpx runner as a real subprocess and returns the exit code.
@@ -60,7 +63,7 @@ function spawnMcpxRunner(
   }
 
   try {
-    const result = execFileSync('node', [MCPX_BIN, ...args], {
+    const result = execFileSync('node', [MCPX_BIN_WITH_EXT, ...args], {
       env: spawnEnv,
       timeout: 15_000,
       stdio: ['pipe', 'pipe', 'pipe'],

@@ -4,7 +4,7 @@
   "description": "Universal modular launcher for MCP servers — TypeScript CLI",
   "type": "module",
   "bin": {
-    "mcpx": "bin/mcpx"
+    "mcpx": "bin/mcpx.js"
   },
   "main": "./out/dist/index.js",
   "module": "./out/dist/index.js",

@@ -38,7 +38,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /** Path to the mcpx bin shim (real CLI). */
-const MCPX_BIN = resolve(__dirname, '../../../bin/mcpx');
+const MCPX_BIN = resolve(__dirname, '../../../bin/mcpx.js');
 
 /** Timeout for spawned processes. */
 const SPAWN_TIMEOUT = 30_000;

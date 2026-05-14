@@ -34,7 +34,7 @@ const DIST_ROOT = resolve(__dirname, '../../../out/dist');
 /**
  * Path to the mcpx bin shim.
  */
-const MCPX_BIN = resolve(__dirname, '../../../bin/mcpx');
+const MCPX_BIN = resolve(__dirname, '../../../bin/mcpx.js');
 
 /**
  * Timeout for each spawn (real npx tsx startup can be slow).

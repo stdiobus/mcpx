@@ -22,10 +22,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /** Root of the packages/mcpx directory */
+// __dirname = <repo>/src/__tests__/system → go up 3 levels to reach repo root.
 const PACKAGE_ROOT = resolve(__dirname, '../../..');
 
 /** Path to the bin/mcpx shim */
-const BIN_MCPX = resolve(PACKAGE_ROOT, 'bin/mcpx');
+const BIN_MCPX = resolve(PACKAGE_ROOT, 'bin/mcpx.js');
 
 /** Path to the dist directory */
 const DIST_DIR = resolve(PACKAGE_ROOT, 'out/dist');

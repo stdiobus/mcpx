@@ -26,6 +26,7 @@ const __dirname = dirname(__filename);
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 /** Root of the packages/mcpx directory. */
+// __dirname = <repo>/src/__tests__/system → go up 3 levels to reach repo root.
 const MCPX_ROOT = resolve(__dirname, '../../..');
 
 /** Timeout for build/test commands (5 minutes). */

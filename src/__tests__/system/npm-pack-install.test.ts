@@ -35,6 +35,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /** Root of the packages/mcpx directory */
+// __dirname = <repo>/src/__tests__/system → go up 3 levels to reach repo root.
 const PACKAGE_ROOT = resolve(__dirname, '../../..');
 
 /** Path to the dist directory */

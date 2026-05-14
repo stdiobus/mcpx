@@ -42,7 +42,7 @@ const DIST_ROOT = resolve(__dirname, '../../../out/dist');
 /**
  * Path to the mcpx bin shim.
  */
-const MCPX_BIN = resolve(__dirname, '../../../bin/mcpx');
+const MCPX_BIN = resolve(__dirname, '../../../bin/mcpx.js');
 
 /**
  * Path to the mcpx-runner helper for spawning real processes.
