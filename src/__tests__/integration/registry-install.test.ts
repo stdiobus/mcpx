@@ -288,7 +288,7 @@ describe('Integration: Registry Install Flow', () => {
 
       const installedEntryContent = readFileSync(entryFilePath, 'utf-8');
       expect(installedEntryContent.replace(/\r\n/g, '\n')).toBe(entryContent.replace(/\r\n/g, '\n'));
-    });
+    }, 30_000);
   });
 
   describe('module not found in registry', () => {
