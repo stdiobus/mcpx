@@ -1,6 +1,12 @@
 export function tsxEsmNodeArgs(): string[] {
-  const major = Number(process.versions.node.split('.')[0] || 0);
-  // Node 20+ supports `--import` for ESM loaders.
-  // Node 18/19 should use `--loader` (the older `--experimental-loader` is not reliable across minors).
-  return major >= 20 ? ['--import', 'tsx/esm'] : ['--loader', 'tsx/esm'];
+  const [majS, minS] = process.versions.node.split('.');
+  const major = Number(majS || 0);
+  const minor = Number(minS || 0);
+
+  // `tsx` enforces `--import` on Node v18.19.0+ (and Node 20+).
+  // Older Node 18 minors don't have `--import` and must use `--loader`.
+  const supportsImportFlag =
+    major >= 20 || major === 19 || (major === 18 && minor >= 19);
+
+  return supportsImportFlag ? ['--import', 'tsx/esm'] : ['--loader', 'tsx/esm'];
 }
