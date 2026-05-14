@@ -12,7 +12,7 @@ import { resolve } from 'node:path';
 const major = Number(process.versions.node.split('.')[0] || 0);
 const configPath = resolve(process.cwd(), 'esbuild.config.ts');
 
-const nodeArgs = major >= 20 ? ['--import', 'tsx/esm'] : ['--loader', 'tsx/esm'];
+const nodeArgs = major >= 20 ? ['--import', 'tsx/esm'] : ['--experimental-loader', 'tsx/esm'];
 const extraArgs = process.argv.slice(2); // e.g. --watch
 
 const result = spawnSync(process.execPath, [...nodeArgs, configPath, ...extraArgs], {
@@ -21,4 +21,3 @@ const result = spawnSync(process.execPath, [...nodeArgs, configPath, ...extraArg
 });
 
 process.exit(result.status ?? 1);
-
