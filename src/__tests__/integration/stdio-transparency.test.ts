@@ -95,12 +95,26 @@ function spawnMcpxWithPayload(payload: Buffer): {
   };
 }
 
+function formatSpawnFailure(label: string, r: { stdout: Buffer; stderr: Buffer; exitCode: number | null }) {
+  const clip = (b: Buffer, max = 16_000) => {
+    const s = (b ?? Buffer.alloc(0)).toString('utf-8');
+    return s.length > max ? s.slice(0, max) + '\n...[truncated]' : s;
+  };
+  return [
+    `${label} failed (exitCode=${r.exitCode})`,
+    '--- stderr ---',
+    clip(r.stderr),
+    '--- stdout ---',
+    clip(r.stdout),
+  ].join('\n');
+}
+
 describe('Stdio Transparency — Byte-for-byte verification', () => {
   it('passes empty payload (0 bytes) through unchanged', () => {
     const input = Buffer.alloc(0);
     const { stdout, stderr, exitCode } = spawnMcpxWithPayload(input);
 
-    expect(exitCode).toBe(0);
+    if (exitCode !== 0) throw new Error(formatSpawnFailure('stdio-runner', { stdout, stderr, exitCode }));
     expect(stdout.length).toBe(input.length);
     expect(Buffer.compare(input, stdout)).toBe(0);
   });
@@ -109,7 +123,7 @@ describe('Stdio Transparency — Byte-for-byte verification', () => {
     const input = Buffer.from([0x42]);
     const { stdout, stderr, exitCode } = spawnMcpxWithPayload(input);
 
-    expect(exitCode).toBe(0);
+    if (exitCode !== 0) throw new Error(formatSpawnFailure('stdio-runner', { stdout, stderr, exitCode }));
     expect(stdout.length).toBe(input.length);
     expect(Buffer.compare(input, stdout)).toBe(0);
   });
@@ -118,7 +132,7 @@ describe('Stdio Transparency — Byte-for-byte verification', () => {
     const input = Buffer.from(randomBytes(1024));
     const { stdout, stderr, exitCode } = spawnMcpxWithPayload(input);
 
-    expect(exitCode).toBe(0);
+    if (exitCode !== 0) throw new Error(formatSpawnFailure('stdio-runner', { stdout, stderr, exitCode }));
     expect(stdout.length).toBe(input.length);
     expect(Buffer.compare(input, stdout)).toBe(0);
   });
@@ -127,7 +141,7 @@ describe('Stdio Transparency — Byte-for-byte verification', () => {
     const input = Buffer.from(randomBytes(64 * 1024));
     const { stdout, stderr, exitCode } = spawnMcpxWithPayload(input);
 
-    expect(exitCode).toBe(0);
+    if (exitCode !== 0) throw new Error(formatSpawnFailure('stdio-runner', { stdout, stderr, exitCode }));
     expect(stdout.length).toBe(input.length);
     expect(Buffer.compare(input, stdout)).toBe(0);
   });
@@ -136,7 +150,7 @@ describe('Stdio Transparency — Byte-for-byte verification', () => {
     const input = Buffer.from('{"jsonrpc":"2.0","method":"initialize","id":1,"params":{}}\n', 'utf-8');
     const { stdout, stderr, exitCode } = spawnMcpxWithPayload(input);
 
-    expect(exitCode).toBe(0);
+    if (exitCode !== 0) throw new Error(formatSpawnFailure('stdio-runner', { stdout, stderr, exitCode }));
     expect(stdout.length).toBe(input.length);
     expect(Buffer.compare(input, stdout)).toBe(0);
   });
@@ -145,7 +159,7 @@ describe('Stdio Transparency — Byte-for-byte verification', () => {
     const input = Buffer.from([0x00, 0x01, 0xFF, 0x00, 0x7F]);
     const { stdout, stderr, exitCode } = spawnMcpxWithPayload(input);
 
-    expect(exitCode).toBe(0);
+    if (exitCode !== 0) throw new Error(formatSpawnFailure('stdio-runner', { stdout, stderr, exitCode }));
     expect(stdout.length).toBe(input.length);
     expect(Buffer.compare(input, stdout)).toBe(0);
   });
@@ -155,7 +169,7 @@ describe('Stdio Transparency — Byte-for-byte verification', () => {
     const input = Buffer.from('MARKER_PAYLOAD_12345\n', 'utf-8');
     const { stdout, stderr, exitCode } = spawnMcpxWithPayload(input);
 
-    expect(exitCode).toBe(0);
+    if (exitCode !== 0) throw new Error(formatSpawnFailure('stdio-runner', { stdout, stderr, exitCode }));
 
     // stdout must be exactly the input — no extra bytes from mcpx
     expect(stdout.length).toBe(input.length);
@@ -175,9 +189,9 @@ describe('Stdio Transparency — Byte-for-byte verification', () => {
 
     for (const size of sizes) {
       const input = size === 0 ? Buffer.alloc(0) : Buffer.from(randomBytes(size));
-      const { stdout, exitCode } = spawnMcpxWithPayload(input);
+      const { stdout, stderr, exitCode } = spawnMcpxWithPayload(input);
 
-      expect(exitCode).toBe(0);
+      if (exitCode !== 0) throw new Error(formatSpawnFailure('stdio-runner', { stdout, stderr, exitCode }));
       expect(stdout.length).toBe(input.length);
       expect(Buffer.compare(input, stdout)).toBe(0);
     }

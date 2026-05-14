@@ -97,6 +97,17 @@ function spawnEnvRunner(
   }
 }
 
+function formatSpawnFailure(label: string, r: { stdout: string; stderr: string; exitCode: number | null }) {
+  const clip = (s: string, max = 16_000) => (s.length > max ? s.slice(0, max) + '\n...[truncated]' : s);
+  return [
+    `${label} failed (exitCode=${r.exitCode})`,
+    '--- stderr ---',
+    clip(r.stderr || ''),
+    '--- stdout ---',
+    clip(r.stdout || ''),
+  ].join('\n');
+}
+
 /**
  * Write a .env file from a record of key-value pairs.
  */
@@ -243,7 +254,9 @@ fs.writeFileSync(process.env.ENV_PROBE_OUTPUT, output);
       });
 
       // The runner should exit successfully
-      expect(result.exitCode).toBe(0);
+      if (result.exitCode !== 0) {
+        throw new Error(formatSpawnFailure('env-layers-runner', result));
+      }
 
       // Read the probe output
       expect(existsSync(outputPath)).toBe(true);
