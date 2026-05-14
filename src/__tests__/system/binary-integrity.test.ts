@@ -36,6 +36,21 @@ const DIST_INDEX = resolve(DIST_DIR, 'index.js');
 
 // --- Helper ---
 
+function diagRoot(): string {
+  let entries: string[] = [];
+  try {
+    entries = readdirSync(PACKAGE_ROOT);
+  } catch {
+    entries = [];
+  }
+  return [
+    `__dirname=${__dirname}`,
+    `PACKAGE_ROOT=${PACKAGE_ROOT}`,
+    `cwd=${process.cwd()}`,
+    `PACKAGE_ROOT entries=${entries.slice(0, 30).join(', ')}`,
+  ].join('\n');
+}
+
 /**
  * Spawns a node process and returns stdout, stderr, and exit code.
  */
@@ -73,7 +88,9 @@ function spawnNode(
 describe('System: Binary Integrity', () => {
   describe('Package structure', () => {
     it('bin/mcpx exists and has shebang #!/usr/bin/env node', () => {
-      expect(existsSync(BIN_MCPX)).toBe(true);
+      if (!existsSync(BIN_MCPX)) {
+        throw new Error(`Missing ${BIN_MCPX}\n${diagRoot()}`);
+      }
 
       const content = readFileSync(BIN_MCPX, 'utf-8');
       // On Windows checkouts, the file may have CRLF endings; normalize so the test is portable.
@@ -82,7 +99,9 @@ describe('System: Binary Integrity', () => {
     });
 
     it('out/dist/index.js exists after build', () => {
-      expect(existsSync(DIST_INDEX)).toBe(true);
+      if (!existsSync(DIST_INDEX)) {
+        throw new Error(`Missing ${DIST_INDEX}\n${diagRoot()}`);
+      }
 
       // Verify it's a non-empty file
       const stat = statSync(DIST_INDEX);
@@ -91,7 +110,9 @@ describe('System: Binary Integrity', () => {
     });
 
     it('out/dist/ contains all bundled files', () => {
-      expect(existsSync(DIST_DIR)).toBe(true);
+      if (!existsSync(DIST_DIR)) {
+        throw new Error(`Missing ${DIST_DIR}\n${diagRoot()}`);
+      }
 
       const entries = readdirSync(DIST_DIR);
 

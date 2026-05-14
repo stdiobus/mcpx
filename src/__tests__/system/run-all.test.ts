@@ -41,6 +41,10 @@ const EXEC_OPTIONS: ExecSyncOptionsWithBufferEncoding = {
   encoding: 'buffer',
 };
 
+function rootDiag(): string {
+  return `MCPX_ROOT=${MCPX_ROOT} cwd=${process.cwd()} __dirname=${__dirname}`;
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /**
@@ -150,6 +154,7 @@ describe('System: Build and Test Infrastructure', () => {
       });
 
       if (result.exitCode !== 0) {
+        console.error(rootDiag());
         console.error('Unit test stderr:', result.stderr.slice(0, 2000));
       }
       expect(result.exitCode).toBe(0);
@@ -169,6 +174,7 @@ describe('System: Build and Test Infrastructure', () => {
       });
 
       if (result.exitCode !== 0) {
+        console.error(rootDiag());
         console.error('Property test stderr:', result.stderr.slice(0, 2000));
       }
       expect(result.exitCode).toBe(0);
@@ -188,6 +194,7 @@ describe('System: Build and Test Infrastructure', () => {
       });
 
       if (result.exitCode !== 0) {
+        console.error(rootDiag());
         console.error('Integration test stderr:', result.stderr.slice(0, 2000));
       }
       expect(result.exitCode).toBe(0);
@@ -207,6 +214,7 @@ describe('System: Build and Test Infrastructure', () => {
       });
 
       if (result.exitCode !== 0) {
+        console.error(rootDiag());
         console.error('E2E test stderr:', result.stderr.slice(0, 2000));
       }
       expect(result.exitCode).toBe(0);
