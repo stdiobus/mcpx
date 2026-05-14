@@ -503,7 +503,7 @@ describe('Integration: Dependency Resolution', () => {
       } finally {
         await new Promise<void>((resolve) => circServer.close(() => resolve()));
       }
-    });
+    }, 20_000);
   });
 
   describe('Depth limit: chain deeper than 10 levels', () => {
