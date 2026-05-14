@@ -275,10 +275,11 @@ process.exit(1);
       );
       writeFileSync(join(moduleDir, 'main.go'), 'package main\nfunc main() {}\n', 'utf-8');
 
-      // Spawn doctor with a restricted PATH that excludes go but includes node
-      // We need node to run the management-runner.mjs itself
+      // Spawn doctor with a restricted PATH that excludes go but includes node.
+      // Some CI images (notably Ubuntu) may have `go` preinstalled in /usr/bin,
+      // so we intentionally keep PATH minimal to make this test deterministic.
       const nodeBinDir = dirname(process.execPath);
-      const restrictedPath = `${nodeBinDir}:/usr/bin:/bin`;
+      const restrictedPath = `${nodeBinDir}`;
       const result = spawnManagement(['doctor', '--json'], {
         MCPX_ROOT: root,
         PATH: restrictedPath,
