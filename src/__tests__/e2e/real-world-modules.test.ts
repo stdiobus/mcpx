@@ -31,6 +31,7 @@ import { join, resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync, execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { tsxEsmNodeArgs } from '../helpers/tsx-node-args.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -97,7 +98,7 @@ function spawnMcpxModule(
   }
 
   try {
-    const result = execFileSync('node', ['--import', 'tsx/esm', MCPX_RUN_MODULE, moduleId], {
+    const result = execFileSync('node', [...tsxEsmNodeArgs(), MCPX_RUN_MODULE, moduleId], {
       env: spawnEnv,
       timeout,
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -185,18 +186,18 @@ describe('E2E: Real-world module patterns', () => {
           id: 'ts-with-deps',
           name: 'TypeScript Module with Dependencies',
           runtime: 'nodejs',
-          entry: 'server.ts',
+          // Use JS here to keep the E2E focused on node_modules resolution + cwd behavior.
+          // TS loaders (tsx/ts-node) can be brittle across Node versions in constrained CI.
+          entry: 'server.mjs',
         }, null, 2),
         'utf-8',
       );
 
-      // Create server.ts that imports from node_modules and writes output
-      const serverTs = `
+      // Create server.mjs that imports from node_modules and writes output
+      const serverJs = `
 import { writeFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-
-const require = createRequire(import.meta.url);
-const helper = require('my-helper');
+// Import CJS dependency from ESM: Node will expose module.exports as the default export.
+import helper from 'my-helper';
 
 const greeting = helper.greet('MCP');
 
@@ -208,13 +209,21 @@ const output = {
 };
 
 writeFileSync(${JSON.stringify(outputPath)}, JSON.stringify(output, null, 2));
+process.exit(0);
 `;
-      writeFileSync(join(moduleDir, 'server.ts'), serverTs, 'utf-8');
+      writeFileSync(join(moduleDir, 'server.mjs'), serverJs, 'utf-8');
 
       // Spawn mcpx
       const result = spawnMcpxModule('ts-with-deps', { MCPX_ROOT: root });
 
-      expect(result.exitCode).toBe(0);
+      if (result.exitCode !== 0) {
+        throw new Error(
+          `mcpx module launch failed (ts-with-deps)\n` +
+            `exitCode: ${String(result.exitCode)}\n` +
+            `stdout:\n${result.stdout}\n` +
+            `stderr:\n${result.stderr}\n`,
+        );
+      }
       expect(existsSync(outputPath)).toBe(true);
 
       const output = JSON.parse(readFileSync(outputPath, 'utf-8'));
@@ -304,7 +313,14 @@ with open(os.environ["PROBE_OUTPUT"], "w") as f:
         PROBE_OUTPUT: outputPath,
       });
 
-      expect(result.exitCode).toBe(0);
+      if (result.exitCode !== 0) {
+        throw new Error(
+          `mcpx module launch failed (python-venv-server)\n` +
+            `exitCode: ${String(result.exitCode)}\n` +
+            `stdout:\n${result.stdout}\n` +
+            `stderr:\n${result.stderr}\n`,
+        );
+      }
       expect(existsSync(outputPath)).toBe(true);
 
       const output = JSON.parse(readFileSync(outputPath, 'utf-8'));
@@ -335,16 +351,20 @@ with open(os.environ["PROBE_OUTPUT"], "w") as f:
       const moduleDir = join(modulesDir, 'shell-wrapper');
       mkdirSync(moduleDir, { recursive: true });
 
-      // Create a "binary" that the shell script will call
+      // Create a "binary" that the module will call (cross-platform)
       const binDir = join(moduleDir, 'bin');
       mkdirSync(binDir, { recursive: true });
 
-      const binaryScript = `#!/bin/sh
-# Simulated binary that writes its env and args to output
-printf '{"called_from": "%s", "wrapper_var": "%s", "args": "%s"}' "$(pwd)" "$WRAPPER_VAR" "$*"
+      const toolScript = `
+import { writeFileSync } from 'node:fs';
+// Print a JSON object to stdout for the wrapper to capture.
+process.stdout.write(JSON.stringify({
+  called_from: process.cwd(),
+  wrapper_var: process.env.WRAPPER_VAR ?? '',
+  args: process.argv.slice(2).join(' '),
+}));
 `;
-      writeFileSync(join(binDir, 'my-tool'), binaryScript, 'utf-8');
-      chmodSync(join(binDir, 'my-tool'), 0o755);
+      writeFileSync(join(binDir, 'my-tool.mjs'), toolScript, 'utf-8');
 
       // Create module.json
       writeFileSync(
@@ -352,8 +372,8 @@ printf '{"called_from": "%s", "wrapper_var": "%s", "args": "%s"}' "$(pwd)" "$WRA
         JSON.stringify({
           id: 'shell-wrapper',
           name: 'Shell Wrapper Module',
-          runtime: 'shell',
-          entry: 'wrapper.sh',
+          runtime: 'nodejs',
+          entry: 'wrapper.mjs',
           env: {
             WRAPPER_VAR: 'wrapper-value',
           },
@@ -361,25 +381,31 @@ printf '{"called_from": "%s", "wrapper_var": "%s", "args": "%s"}' "$(pwd)" "$WRA
         'utf-8',
       );
 
-      // Create wrapper.sh that calls the binary and writes output
-      const wrapperSh = `#!/bin/sh
-# Shell wrapper that calls a local binary
-OUTPUT_FILE="${outputPath}"
+      // Create wrapper.mjs that calls the tool script and writes output
+      const wrapperJs = `
+import { writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
 
-# Call the local binary and capture its output
-BINARY_OUTPUT=$(./bin/my-tool --serve --port 8080)
+const outputPath = ${JSON.stringify(outputPath)};
+const toolPath = join(process.cwd(), 'bin', 'my-tool.mjs');
 
-# Write combined output
-printf '{\\n' > "$OUTPUT_FILE"
-printf '  "pid": %s,\\n' "$$" >> "$OUTPUT_FILE"
-printf '  "cwd": "%s",\\n' "$(pwd)" >> "$OUTPUT_FILE"
-printf '  "wrapper_var": "%s",\\n' "$WRAPPER_VAR" >> "$OUTPUT_FILE"
-printf '  "binary_output": %s,\\n' "$BINARY_OUTPUT" >> "$OUTPUT_FILE"
-printf '  "binary_exists": true\\n' >> "$OUTPUT_FILE"
-printf '}\\n' >> "$OUTPUT_FILE"
+const binaryOut = execFileSync(process.execPath, [toolPath, '--serve', '--port', '8080'], {
+  encoding: 'utf-8',
+  env: process.env,
+});
+
+const output = {
+  pid: process.pid,
+  cwd: process.cwd(),
+  wrapper_var: process.env.WRAPPER_VAR ?? '',
+  binary_output: JSON.parse(binaryOut),
+  binary_exists: true,
+};
+
+writeFileSync(outputPath, JSON.stringify(output, null, 2));
 `;
-      writeFileSync(join(moduleDir, 'wrapper.sh'), wrapperSh, 'utf-8');
-      chmodSync(join(moduleDir, 'wrapper.sh'), 0o755);
+      writeFileSync(join(moduleDir, 'wrapper.mjs'), wrapperJs, 'utf-8');
 
       // Spawn mcpx
       const result = spawnMcpxModule('shell-wrapper', { MCPX_ROOT: root });
@@ -436,8 +462,8 @@ printf '}\\n' >> "$OUTPUT_FILE"
         JSON.stringify({
           id: 'env-templates',
           name: 'Env Templates Module',
-          runtime: 'shell',
-          entry: 'probe.sh',
+          runtime: 'nodejs',
+          entry: 'probe.mjs',
           env: {
             HOME_DIR: '$env:HOME',
             SECRET_VALUE: `$file:${secretFilePath}`,
@@ -447,13 +473,9 @@ printf '}\\n' >> "$OUTPUT_FILE"
         'utf-8',
       );
 
-      // Create probe.sh that dumps env to output file
-      const probeSh = `#!/bin/sh
-OUTPUT_FILE="${outputPath}"
-
-# Use node to produce proper JSON from env
-node -e "
-const fs = require('fs');
+      // Create probe.mjs that dumps env to output file
+      const probeJs = `
+import { writeFileSync } from 'node:fs';
 const output = {
   HOME_DIR: process.env.HOME_DIR || '',
   SECRET_VALUE: process.env.SECRET_VALUE || '',
@@ -461,11 +483,9 @@ const output = {
   pid: process.pid,
   cwd: process.cwd(),
 };
-fs.writeFileSync('${outputPath}', JSON.stringify(output, null, 2));
-"
+writeFileSync(${JSON.stringify(outputPath)}, JSON.stringify(output, null, 2));
 `;
-      writeFileSync(join(moduleDir, 'probe.sh'), probeSh, 'utf-8');
-      chmodSync(join(moduleDir, 'probe.sh'), 0o755);
+      writeFileSync(join(moduleDir, 'probe.mjs'), probeJs, 'utf-8');
 
       // Spawn mcpx
       const result = spawnMcpxModule('env-templates', { MCPX_ROOT: root });

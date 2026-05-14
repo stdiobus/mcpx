@@ -2,18 +2,17 @@
  * Node.js runtime plugin for mcpx.
  *
  * Handles launching Node.js modules with appropriate commands:
- * - `.ts` files → `npx tsx <entry>`
+ * - `.ts` files → `node --import tsx/esm -e "import(<file://...>)"`
  * - `.js` / `.mjs` files → `node <entry>`
  *
  * Validates entry file existence and extension, checks for
- * `node` and `npx` availability in PATH.
+ * `node` availability in PATH.
  *
  * @module runtimes/nodejs
- * @see Requirement 6.1 — TypeScript execution via npx tsx
+ * @see Requirement 6.1 — TypeScript execution via tsx
  * @see Requirement 6.2 — JavaScript execution via node
  * @see Requirement 6.3 — Working directory set to module directory
  * @see Requirement 6.4 — Error if node not found
- * @see Requirement 6.5 — Error if npx not found for .ts
  * @see Requirement 6.6 — Error if entry file missing
  * @see Requirement 6.7 — Error for unsupported extensions
  */
@@ -21,6 +20,8 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve, extname } from 'node:path';
+import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
 import type { RuntimePlugin, RuntimeCheck, ExecDescriptor } from './plugin.js';
 import type { ResolvedModule } from '../core/manifest.js';
 import { RuntimeError, ManifestError } from '../core/errors.js';
@@ -60,10 +61,46 @@ function isCommandAvailable(command: string): boolean {
 }
 
 /**
+ * Check whether the local `tsx` package is resolvable.
+ * We prefer `node --import tsx/esm` over `npx tsx` to avoid IPC requirements
+ * in restricted environments (and to behave consistently across platforms).
+ */
+function isTsxImportAvailable(): boolean {
+  try {
+    const req = createRequire(import.meta.url);
+    // "tsx/esm" is what we use at runtime.
+    req.resolve('tsx/esm');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function resolveTsxImportPath(): string {
+  const req = createRequire(import.meta.url);
+  return req.resolve('tsx/esm');
+}
+
+function isTsNodeEsmAvailable(): boolean {
+  try {
+    const req = createRequire(import.meta.url);
+    req.resolve('ts-node/esm');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function resolveTsNodeEsmPath(): string {
+  const req = createRequire(import.meta.url);
+  return req.resolve('ts-node/esm');
+}
+
+/**
  * Node.js runtime plugin.
  *
  * Implements the RuntimePlugin interface for launching Node.js modules.
- * Supports TypeScript (.ts) via `npx tsx` and JavaScript (.js, .mjs) via `node`.
+ * Supports TypeScript (.ts) via `node --import tsx/esm` (ESM import) and JavaScript (.js, .mjs) via `node`.
  */
 export class NodejsPlugin implements RuntimePlugin {
   readonly name = 'nodejs';
@@ -97,13 +134,13 @@ export class NodejsPlugin implements RuntimePlugin {
    * Build the execution descriptor for a Node.js module.
    *
    * Determines the appropriate command based on the entry file extension:
-   * - `.ts` → `npx tsx <entry> <args>`
+   * - `.ts` → `node --import tsx/esm -e "import(<file://...>)" <args>`
    * - `.js` / `.mjs` → `node <entry> <args>`
    *
    * Validates:
    * - Entry file extension is supported (.ts, .js, .mjs)
    * - Entry file exists at the resolved path
-   * - Required tools (node, npx) are available in PATH
+   * - Required tools (node) are available in PATH
    *
    * @param module - The fully resolved module with manifest and directory path
    * @returns The execution descriptor for process replacement
@@ -144,18 +181,31 @@ export class NodejsPlugin implements RuntimePlugin {
     const args = manifest.args ?? [];
 
     if (ext === '.ts') {
-      // R6.5: Check npx availability for TypeScript
-      if (!isCommandAvailable('npx')) {
+      const canUseTsNode = isTsNodeEsmAvailable();
+      const canUseTsx = isTsxImportAvailable();
+      if (!canUseTsNode && !canUseTsx) {
         throw new RuntimeError(
-          'npx not found in PATH (required for TypeScript execution)',
-          'Install Node.js (includes npx): https://nodejs.org or run: brew install node',
+          'No TypeScript loader is available (required for .ts execution)',
+          'Install dependencies (ts-node or tsx) or use a JavaScript entry (.js/.mjs)',
         );
       }
 
-      // R6.1: TypeScript → npx tsx <entry>
+      // Prefer ts-node's ESM loader when available; it is more predictable across Node versions.
+      if (canUseTsNode) {
+        return {
+          command: 'node',
+          args: ['--loader', resolveTsNodeEsmPath(), entry, ...args],
+          cwd: dir, // R6.3
+          env: {},
+        };
+      }
+
+      // Fallback: tsx ESM loader.
+      const entryUrl = pathToFileURL(resolve(dir, entry)).href;
+      const importExpr = `import(${JSON.stringify(entryUrl)})`;
       return {
-        command: 'npx',
-        args: ['tsx', entry, ...args],
+        command: 'node',
+        args: ['--import', resolveTsxImportPath(), '-e', importExpr, ...args],
         cwd: dir, // R6.3
         env: {},
       };

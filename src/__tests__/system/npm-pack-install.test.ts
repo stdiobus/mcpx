@@ -30,12 +30,13 @@ import { join, resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync, spawn as spawnCb } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { findPackageRoot } from '../helpers/package-root.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-/** Root of the packages/mcpx directory */
-const PACKAGE_ROOT = resolve(__dirname, '../../..');
+/** Root of the package directory */
+const PACKAGE_ROOT = findPackageRoot(__dirname);
 
 /** Path to the dist directory */
 const DIST_DIR = resolve(PACKAGE_ROOT, 'out/dist');

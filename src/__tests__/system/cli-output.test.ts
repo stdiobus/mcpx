@@ -27,6 +27,7 @@ import { join, resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { tsxEsmNodeArgs } from '../helpers/tsx-node-args.js';
 
 // --- Constants ---
 
@@ -64,7 +65,7 @@ function spawnCli(
     }
   }
 
-  const result = spawnSync('node', ['--import', 'tsx/esm', CLI_RUNNER, ...args], {
+  const result = spawnSync('node', [...tsxEsmNodeArgs(), CLI_RUNNER, ...args], {
     env: spawnEnv,
     timeout: SPAWN_TIMEOUT,
     stdio: ['pipe', 'pipe', 'pipe'],

@@ -37,8 +37,8 @@ import { realpathSync } from 'node:fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-/** Path to the shell integration runner that performs the full mcpx flow. */
-const SHELL_RUNNER = resolve(__dirname, '../helpers/shell-integration-runner.mjs');
+/** Path to the mcpx bin shim (real CLI). */
+const MCPX_BIN = resolve(__dirname, '../../../bin/mcpx.js');
 
 /** Timeout for spawned processes. */
 const SPAWN_TIMEOUT = 30_000;
@@ -104,8 +104,8 @@ function createIsolatedModules(): ModuleSetup {
     const manifest = {
       id: name,
       name: `Module ${name}`,
-      runtime: 'shell',
-      entry: 'probe.sh',
+      runtime: 'nodejs',
+      entry: 'probe.mjs',
     };
     writeFileSync(
       join(moduleDir, 'module.json'),
@@ -113,48 +113,37 @@ function createIsolatedModules(): ModuleSetup {
       'utf-8',
     );
 
-    // Write probe.sh — dumps env, cwd, and creates an artifact file
+    // Write probe.mjs — dumps env, cwd, and creates an artifact file (cross-platform)
     const outputPath = join(outputDir, `${name}-output.json`);
     const artifactPath = join(moduleDir, `${name}-artifact.txt`);
-    const probeScript = `#!/bin/sh
-# Probe script for module "${name}"
-# Dumps environment, cwd, and creates an artifact file
+    const probeScript = `
+import { writeFileSync, existsSync } from 'node:fs';
+import { join as joinPath } from 'node:path';
 
-OUTPUT_FILE="${outputPath}"
-ARTIFACT_FILE="${artifactPath}"
-
-# Create an artifact file to test state leakage
-echo "artifact-from-${name}" > "$ARTIFACT_FILE"
-
-# Use node to produce proper JSON from env
-node -e "
-const fs = require('fs');
-const path = require('path');
+// Create an artifact file to test state leakage
+writeFileSync(${JSON.stringify(artifactPath)}, 'artifact-from-' + ${JSON.stringify(name)});
 
 // Check for artifacts from other modules
 const cwd = process.cwd();
 const otherArtifacts = [];
 const moduleNames = ['alpha', 'bravo', 'charlie', 'delta', 'echo'];
 for (const m of moduleNames) {
-  if (m === '${name}') continue;
-  const artifactFile = path.join(cwd, m + '-artifact.txt');
-  if (fs.existsSync(artifactFile)) {
-    otherArtifacts.push(m);
-  }
+  if (m === ${JSON.stringify(name)}) continue;
+  const artifactFile = joinPath(cwd, m + '-artifact.txt');
+  if (existsSync(artifactFile)) otherArtifacts.push(m);
 }
 
 const output = {
-  module: '${name}',
+  module: ${JSON.stringify(name)},
   pid: process.pid,
-  cwd: process.cwd(),
+  cwd,
   env: process.env,
-  otherArtifactsInCwd: otherArtifacts
+  otherArtifactsInCwd: otherArtifacts,
 };
-fs.writeFileSync('${outputPath}', JSON.stringify(output, null, 2));
-"
+
+writeFileSync(${JSON.stringify(outputPath)}, JSON.stringify(output, null, 2));
 `;
-    writeFileSync(join(moduleDir, 'probe.sh'), probeScript, 'utf-8');
-    chmodSync(join(moduleDir, 'probe.sh'), 0o755);
+    writeFileSync(join(moduleDir, 'probe.mjs'), probeScript, 'utf-8');
   }
 
   return { root, moduleDirs, outputDir, secrets };
@@ -180,7 +169,7 @@ function spawnModule(
   }
 
   try {
-    const result = execFileSync('node', ['--import', 'tsx/esm', SHELL_RUNNER, 'run', moduleId], {
+    const result = execFileSync('node', [MCPX_BIN, 'run', moduleId], {
       env: spawnEnv,
       timeout: SPAWN_TIMEOUT,
       stdio: ['pipe', 'pipe', 'pipe'],

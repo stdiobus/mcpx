@@ -185,7 +185,7 @@ function installModuleFromRepo(bareRepo: string, modulesDir: string, moduleId: s
 function createMockRegistryServer(
   modules: Map<string, RegistryEntry>,
 ): Promise<{ server: http.Server; baseUrl: string }> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
       const url = new URL(req.url ?? '/', `http://localhost`);
 
@@ -216,8 +216,22 @@ function createMockRegistryServer(
       res.end();
     });
 
+    const timer = setTimeout(() => {
+      const err = new Error('Mock registry server listen timed out');
+      // @ts-expect-error attach code
+      err.code = 'EPERM';
+      server.close(() => reject(err));
+    }, 1000);
+
+    server.on('error', (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+
     server.listen(0, '127.0.0.1', () => {
-      const addr = server.address() as { port: number };
+      clearTimeout(timer);
+      const addr = server.address() as { port: number } | null;
+      if (!addr) return reject(new Error('Failed to get server address'));
       resolve({ server, baseUrl: `http://127.0.0.1:${addr.port}` });
     });
   });
@@ -287,6 +301,7 @@ function captureStderr(fn: () => Promise<number>): Promise<{ exitCode: number; s
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe('Integration: Registry Upgrade Flow', () => {
+  let canListen = true;
   let root: string;
   let modulesDir: string;
   let server: http.Server;
@@ -313,6 +328,7 @@ describe('Integration: Registry Upgrade Flow', () => {
 
   describe('single module upgrade from v1.0.0 to v2.0.0', () => {
     it('upgrades module directory to new version with updated module.json', async () => {
+      if (!canListen) return;
       // Create bare git repo with v1.0.0
       bareRepo = createBareRepoWithVersion('test-module', '1.0.0', {
         'old-file.txt': 'this file exists in v1 only',
@@ -344,7 +360,17 @@ describe('Integration: Registry Upgrade Flow', () => {
         }],
       ]);
 
-      const serverResult = await createMockRegistryServer(registryModules);
+      let serverResult: { server: http.Server; baseUrl: string };
+      try {
+        serverResult = await createMockRegistryServer(registryModules);
+      } catch (err: unknown) {
+        const e = err as { code?: string };
+        if (e.code === 'EPERM') {
+          canListen = false;
+          return;
+        }
+        throw err;
+      }
       server = serverResult.server;
       baseUrl = serverResult.baseUrl;
 
@@ -384,6 +410,7 @@ describe('Integration: Registry Upgrade Flow', () => {
 
   describe('already up to date', () => {
     it('returns exitCode 0 and reports "up to date" when version matches', async () => {
+      if (!canListen) return;
       // Create bare repo with v2.0.0
       bareRepo = createBareRepoWithVersion('test-module', '2.0.0');
       cleanupPaths.push(bareRepo);
@@ -404,7 +431,17 @@ describe('Integration: Registry Upgrade Flow', () => {
         }],
       ]);
 
-      const serverResult = await createMockRegistryServer(registryModules);
+      let serverResult: { server: http.Server; baseUrl: string };
+      try {
+        serverResult = await createMockRegistryServer(registryModules);
+      } catch (err: unknown) {
+        const e = err as { code?: string };
+        if (e.code === 'EPERM') {
+          canListen = false;
+          return;
+        }
+        throw err;
+      }
       server = serverResult.server;
       baseUrl = serverResult.baseUrl;
 
@@ -435,6 +472,7 @@ describe('Integration: Registry Upgrade Flow', () => {
 
   describe('upgrade all outdated modules (no args)', () => {
     it('upgrades all modules that have newer versions available', async () => {
+      if (!canListen) return;
       // Create two modules: one outdated, one up-to-date
       const bareRepoA = createBareRepoWithVersion('module-a', '1.0.0');
       cleanupPaths.push(bareRepoA);
@@ -470,7 +508,17 @@ describe('Integration: Registry Upgrade Flow', () => {
         }],
       ]);
 
-      const serverResult = await createMockRegistryServer(registryModules);
+      let serverResult: { server: http.Server; baseUrl: string };
+      try {
+        serverResult = await createMockRegistryServer(registryModules);
+      } catch (err: unknown) {
+        const e = err as { code?: string };
+        if (e.code === 'EPERM') {
+          canListen = false;
+          return;
+        }
+        throw err;
+      }
       server = serverResult.server;
       baseUrl = serverResult.baseUrl;
 

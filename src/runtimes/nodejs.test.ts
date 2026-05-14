@@ -96,19 +96,19 @@ describe('NodejsPlugin', () => {
 
   describe('buildCommand — TypeScript (.ts)', () => {
     beforeEach(() => {
-      // Default: both node and npx available, entry file exists
+      // Default: node available, entry file exists
       mockExecFileSync.mockReturnValue('v20.11.0');
       mockExistsSync.mockReturnValue(true);
     });
 
-    it('returns npx tsx command for .ts entry (R6.1)', () => {
+    it('returns node command for .ts entry (R6.1)', () => {
       const module = makeModule({ entry: 'server.ts' });
 
       const result = plugin.buildCommand(module);
 
-      expect(result.command).toBe('npx');
-      expect(result.args[0]).toBe('tsx');
-      expect(result.args[1]).toBe('server.ts');
+      expect(result.command).toBe('node');
+      // We support either ts-node/esm or tsx/esm fallback; assert shape not exact path.
+      expect(result.args[0] === '--loader' || result.args[0] === '--import').toBe(true);
     });
 
     it('sets cwd to module directory (R6.3)', () => {
@@ -125,7 +125,7 @@ describe('NodejsPlugin', () => {
 
       const result = plugin.buildCommand(module);
 
-      expect(result.args).toEqual(['tsx', 'server.ts', '--port', '3000']);
+      expect(result.args.slice(-3)).toEqual(['server.ts', '--port', '3000']);
     });
 
     it('returns empty env (manifest env is handled by env-loader, not plugins)', () => {
@@ -136,18 +136,9 @@ describe('NodejsPlugin', () => {
       expect(result.env).toEqual({});
     });
 
-    it('throws RuntimeError if npx not found (R6.5)', () => {
-      // node available, npx not
-      mockExecFileSync.mockImplementation((cmd: string) => {
-        if (cmd === 'node') return 'v20.11.0';
-        throw new Error('ENOENT');
-      });
-
-      const module = makeModule({ entry: 'server.ts' });
-
-      expect(() => plugin.buildCommand(module)).toThrow(RuntimeError);
-      expect(() => plugin.buildCommand(module)).toThrow(/npx not found/);
-    });
+    // We intentionally do not unit-test the "no TS loader available" branch here,
+    // because it relies on Node package export resolution (createRequire().resolve),
+    // which is best covered by integration/E2E tests.
   });
 
   describe('buildCommand — JavaScript (.js)', () => {

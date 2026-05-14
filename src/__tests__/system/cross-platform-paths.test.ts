@@ -29,6 +29,7 @@ import { join, resolve, dirname, relative } from 'node:path';
 import { tmpdir, homedir, platform } from 'node:os';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { tsxEsmNodeArgs } from '../helpers/tsx-node-args.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -41,7 +42,7 @@ const DIST_ROOT = resolve(__dirname, '../../../out/dist');
 /**
  * Path to the mcpx bin shim.
  */
-const MCPX_BIN = resolve(__dirname, '../../../bin/mcpx');
+const MCPX_BIN = resolve(__dirname, '../../../bin/mcpx.js');
 
 /**
  * Path to the mcpx-runner helper for spawning real processes.
@@ -467,7 +468,7 @@ writeFileSync(${JSON.stringify(outputPath)}, JSON.stringify(output, null, 2));
       };
 
       try {
-        execFileSync('node', ['--import', 'tsx/esm', INTEGRATION_RUNNER, 'run', 'launch-probe'], {
+        execFileSync('node', [...tsxEsmNodeArgs(), INTEGRATION_RUNNER, 'run', 'launch-probe'], {
           env: spawnEnv,
           timeout: SPAWN_TIMEOUT,
           stdio: ['pipe', 'pipe', 'pipe'],

@@ -158,7 +158,8 @@ function main() {
     const result = spawnSync(descriptor.command, descriptor.args, {
       cwd: descriptor.cwd,
       env: mergedEnv,
-      stdio: 'inherit',
+      // stdin must flow through so E2E tests can speak JSON-RPC to the server.
+      stdio: ['inherit', 'pipe', 'pipe'],
       windowsHide: true,
     });
 
@@ -170,6 +171,10 @@ function main() {
     if (result.signal) {
       process.exit(128 + 15);
     }
+
+    // Proxy child stdout/stderr so E2E tests can observe real protocol output.
+    if (result.stdout && result.stdout.length) process.stdout.write(result.stdout);
+    if (result.stderr && result.stderr.length) process.stderr.write(result.stderr);
 
     process.exit(result.status ?? 1);
   } catch (err) {

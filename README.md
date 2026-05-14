@@ -3,7 +3,8 @@
 </h1>
 
 <p align="center">
-  One command to run any MCP server module — in any language, on any platform. A manifest-driven launcher for <a href="https://stdiobus.com" target="_blank">stdio Bus</a> ecosystem that replaces hardcoded bash commands in <code>mcp.json</code> with a portable, runtime-agnostic <code>mcpx run &lt;module&gt;</code>.
+  <strong>mcpx</strong> is a manifest-driven CLI launcher for MCP server modules in the <a href="https://stdiobus.com" target="_blank">stdio Bus</a> ecosystem.
+  It replaces hardcoded shell commands in <code>mcp.json</code> with a single portable entrypoint: <code>mcpx run &lt;module&gt;</code>.
 </p>
 
 <p align="center">
@@ -26,6 +27,26 @@
 MCP client configurations (`mcp.json`) are full of hardcoded bash commands, fragile paths, and duplicated environment setup. When a module moves, changes runtime, or needs new env vars, every client config breaks.
 
 mcpx replaces all of that with a single portable command. Define your module once in `module.json`, and any MCP client can launch it with `mcpx run <module-id>`.
+
+## Installation
+
+Install the package globally:
+
+```bash
+npm install -g @stdiobus/mcpx
+```
+
+You can also run it without a global install:
+
+```bash
+npx @stdiobus/mcpx --help
+```
+
+Verify the CLI is available:
+
+```bash
+mcpx --help
+```
 
 ## How It Works
 
@@ -61,8 +82,15 @@ flowchart TD
 
 ## Quick Start
 
-mcpx discovers modules inside a **Module Root** (`~/.ai/` by default, override with `MCPX_ROOT`).  
+mcpx discovers modules inside a **Module Root** (`~/.ai/` by default, override with `MCPX_ROOT`).
 Each module is a folder under `modules/` with a `module.json` manifest and an entry file.
+
+The minimum setup is:
+
+1. Install `mcpx`
+2. Create a module directory under the module root
+3. Add a `module.json` manifest
+4. Point your MCP client at `mcpx`
 
 ```
 ~/.ai/                        ← Module Root
@@ -101,6 +129,12 @@ mcpx run my-module
 ```
 
 > Use `MCPX_ROOT=/your/path mcpx run my-module` to point at a different root.
+
+### First-time setup tips
+
+- `MCPX_ROOT` is useful when you want to keep modules in a workspace, not in `~/.ai/`
+- `module.json` is the source of truth for runtime, entry file, args, and env defaults
+- `mcpx run <module-id>` is the command clients should call once the package is installed
 
 ## Features
 

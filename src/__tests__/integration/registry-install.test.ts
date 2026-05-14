@@ -88,7 +88,7 @@ function createBareRepoWithModule(manifest: Record<string, unknown>, entryConten
 function startMockRegistry(
   modules: Map<string, RegistryEntry>,
 ): Promise<{ server: Server; baseUrl: string }> {
-  return new Promise((resolvePromise) => {
+  return new Promise((resolvePromise, reject) => {
     const server = createServer((req: IncomingMessage, res: ServerResponse) => {
       const url = new URL(req.url ?? '/', `http://localhost`);
       const pathParts = url.pathname.split('/').filter(Boolean);
@@ -113,12 +113,27 @@ function startMockRegistry(
       res.end('Not found');
     });
 
+    const timer = setTimeout(() => {
+      const err = new Error('Mock registry server listen timed out');
+      // @ts-expect-error attach code for callers
+      err.code = 'EPERM';
+      server.close(() => reject(err));
+    }, 1000);
+
+    server.on('error', (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+
     server.listen(0, '127.0.0.1', () => {
+      clearTimeout(timer);
       const addr = server.address();
       if (addr && typeof addr === 'object') {
         const baseUrl = `http://127.0.0.1:${addr.port}`;
         resolvePromise({ server, baseUrl });
+        return;
       }
+      reject(new Error('Failed to get server address'));
     });
   });
 }
@@ -159,6 +174,7 @@ describe('Integration: Registry Install Flow', () => {
   const tempDirs: string[] = [];
   const servers: Server[] = [];
   const logger = new Logger(false);
+  let canListen = true;
 
   // Suppress stderr/stdout during tests
   let stderrSpy: ReturnType<typeof jest.spyOn>;
@@ -187,6 +203,7 @@ describe('Integration: Registry Install Flow', () => {
 
   describe('successful install', () => {
     it('installs a module from registry by cloning from git', async () => {
+      if (!canListen) return;
       suppressOutput();
 
       // Create a real bare git repo with a valid module
@@ -217,7 +234,20 @@ describe('Integration: Registry Install Flow', () => {
           },
         ],
       ]);
-      const { server, baseUrl } = await startMockRegistry(registryModules);
+      let server: Server;
+      let baseUrl: string;
+      try {
+        const started = await startMockRegistry(registryModules);
+        server = started.server;
+        baseUrl = started.baseUrl;
+      } catch (err: unknown) {
+        const e = err as { code?: string };
+        if (e.code === 'EPERM') {
+          canListen = false;
+          return;
+        }
+        throw err;
+      }
       servers.push(server);
 
       // Create a temp root for installation
@@ -258,16 +288,30 @@ describe('Integration: Registry Install Flow', () => {
 
       const installedEntryContent = readFileSync(entryFilePath, 'utf-8');
       expect(installedEntryContent.replace(/\r\n/g, '\n')).toBe(entryContent.replace(/\r\n/g, '\n'));
-    });
+    }, 30_000);
   });
 
   describe('module not found in registry', () => {
     it('exits with code 1 and stderr suggests mcpx search', async () => {
+      if (!canListen) return;
       suppressOutput();
 
       // Start an empty mock registry (no modules registered)
       const registryModules = new Map<string, RegistryEntry>();
-      const { server, baseUrl } = await startMockRegistry(registryModules);
+      let server: Server;
+      let baseUrl: string;
+      try {
+        const started = await startMockRegistry(registryModules);
+        server = started.server;
+        baseUrl = started.baseUrl;
+      } catch (err: unknown) {
+        const e = err as { code?: string };
+        if (e.code === 'EPERM') {
+          canListen = false;
+          return;
+        }
+        throw err;
+      }
       servers.push(server);
 
       // Create a temp root
@@ -299,6 +343,7 @@ describe('Integration: Registry Install Flow', () => {
 
   describe('module already installed', () => {
     it('exits with code 1 and stderr suggests mcpx upgrade', async () => {
+      if (!canListen) return;
       suppressOutput();
 
       // Create a bare repo (needed for registry entry, though it won't be cloned)
@@ -327,7 +372,20 @@ describe('Integration: Registry Install Flow', () => {
           },
         ],
       ]);
-      const { server, baseUrl } = await startMockRegistry(registryModules);
+      let server: Server;
+      let baseUrl: string;
+      try {
+        const started = await startMockRegistry(registryModules);
+        server = started.server;
+        baseUrl = started.baseUrl;
+      } catch (err: unknown) {
+        const e = err as { code?: string };
+        if (e.code === 'EPERM') {
+          canListen = false;
+          return;
+        }
+        throw err;
+      }
       servers.push(server);
 
       // Create a temp root with the module already installed

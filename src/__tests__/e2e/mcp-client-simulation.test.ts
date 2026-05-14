@@ -30,6 +30,7 @@ import { join, resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { tsxEsmNodeArgs } from '../helpers/tsx-node-args.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -44,6 +45,7 @@ const MCPX_RUN_MODULE = resolve(__dirname, '../helpers/mcpx-run-module.mjs');
 /**
  * Path to the compiled dist directory.
  */
+// __dirname is src/__tests__/e2e; go up to package root (mcpx/) then into out/dist.
 const DIST_ROOT = resolve(__dirname, '../../../out/dist');
 
 /**
@@ -253,11 +255,11 @@ describe('E2E: MCP Client Simulation', () => {
       try {
         createEchoServerModule(testRoot);
 
-        // Replicate mcp.json: {"command": "node", "args": ["bin/mcpx", "run", "echo-server"], "env": {"CLIENT_TOKEN": "tok-abc"}}
+        // Replicate mcp.json: {"command": "node", "args": ["bin/mcpx.js", "run", "echo-server"], "env": {"CLIENT_TOKEN": "tok-abc"}}
         // Using mcpx-run-module.mjs which is the real compiled mcpx pipeline
         const config = {
           command: 'node',
-          args: ['--import', 'tsx/esm', MCPX_RUN_MODULE, 'echo-server'],
+          args: [...tsxEsmNodeArgs(), MCPX_RUN_MODULE, 'echo-server'],
           env: { CLIENT_TOKEN: 'tok-abc' },
         };
 
@@ -300,7 +302,7 @@ describe('E2E: MCP Client Simulation', () => {
 
         const config = {
           command: 'node',
-          args: ['--import', 'tsx/esm', MCPX_RUN_MODULE, 'echo-server'],
+          args: [...tsxEsmNodeArgs(), MCPX_RUN_MODULE, 'echo-server'],
           env: {},
         };
 
@@ -340,7 +342,7 @@ describe('E2E: MCP Client Simulation', () => {
 
         const config = {
           command: 'node',
-          args: ['--import', 'tsx/esm', MCPX_RUN_MODULE, 'echo-server'],
+          args: [...tsxEsmNodeArgs(), MCPX_RUN_MODULE, 'echo-server'],
           env: {},
         };
 
@@ -379,7 +381,7 @@ describe('E2E: MCP Client Simulation', () => {
 
         const config = {
           command: 'node',
-          args: ['--import', 'tsx/esm', MCPX_RUN_MODULE, 'echo-server'],
+          args: [...tsxEsmNodeArgs(), MCPX_RUN_MODULE, 'echo-server'],
           env: {},
         };
 
@@ -417,7 +419,7 @@ describe('E2E: MCP Client Simulation', () => {
 
         const config = {
           command: 'node',
-          args: ['--import', 'tsx/esm', MCPX_RUN_MODULE, 'echo-server'],
+          args: [...tsxEsmNodeArgs(), MCPX_RUN_MODULE, 'echo-server'],
           env: {},
         };
 
@@ -457,7 +459,7 @@ describe('E2E: MCP Client Simulation', () => {
 
         const config = {
           command: 'node',
-          args: ['--import', 'tsx/esm', MCPX_RUN_MODULE, 'echo-server'],
+          args: [...tsxEsmNodeArgs(), MCPX_RUN_MODULE, 'echo-server'],
           env: {},
         };
 
@@ -482,7 +484,7 @@ describe('E2E: MCP Client Simulation', () => {
   });
 
   describe('Shorthand format', () => {
-    it('works with shorthand format: {"command": "node", "args": ["bin/mcpx", "echo-server"]}', async () => {
+    it('works with shorthand format: {"command": "node", "args": ["bin/mcpx.js", "echo-server"]}', async () => {
       const testRoot = realpathSync(mkdtempSync(join(tmpdir(), 'mcpx-e2e-short-')));
       try {
         createEchoServerModule(testRoot);
@@ -491,7 +493,7 @@ describe('E2E: MCP Client Simulation', () => {
         // which is equivalent to the shorthand mcp.json format (no "run" subcommand)
         const config = {
           command: 'node',
-          args: ['--import', 'tsx/esm', MCPX_RUN_MODULE, 'echo-server'],
+          args: [...tsxEsmNodeArgs(), MCPX_RUN_MODULE, 'echo-server'],
           env: {},
         };
 
@@ -602,7 +604,7 @@ rl.on('close', () => {
         // and take precedence over .env files (system env has highest precedence per R5)
         const config = {
           command: 'node',
-          args: ['--import', 'tsx/esm', MCPX_RUN_MODULE, 'env-probe'],
+          args: [...tsxEsmNodeArgs(), MCPX_RUN_MODULE, 'env-probe'],
           env: { CLIENT_TOKEN: 'tok-from-mcp-json' },
         };
 

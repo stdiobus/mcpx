@@ -30,6 +30,7 @@ import { join, resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { tsxEsmNodeArgs } from '../helpers/tsx-node-args.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -41,6 +42,7 @@ const STDIO_RUNNER = resolve(__dirname, '../helpers/stdio-runner.mjs');
 
 /** Path to the shell integration runner that handles env loading + args + exec. */
 const SHELL_RUNNER = resolve(__dirname, '../helpers/shell-integration-runner.mjs');
+const MCPX_BIN = resolve(__dirname, '../../../bin/mcpx.js');
 
 /** Path to the mcpx-run-module runner that handles the full pipeline for any runtime. */
 const MCPX_RUN_MODULE = resolve(__dirname, '../helpers/mcpx-run-module.mjs');
@@ -179,7 +181,7 @@ rl.on('close', () => {
 
     const result = spawnSync(
       'node',
-      ['--import', 'tsx/esm', MCPX_RUN_MODULE, 'echo-server'],
+      [...tsxEsmNodeArgs(), MCPX_RUN_MODULE, 'echo-server'],
       {
         input: Buffer.from(jsonRpcRequest, 'utf-8'),
         env: {
@@ -238,7 +240,7 @@ rl.on('close', () => {
       ROOT_API_KEY: 'sk-root-12345',
     });
 
-    // Create the env-dumper module (shell runtime)
+    // Create the env-dumper module (nodejs runtime; cross-platform)
     const moduleDir = join(modulesDir, 'env-dumper');
     mkdirSync(moduleDir, { recursive: true });
 
@@ -250,8 +252,8 @@ rl.on('close', () => {
     const manifest = {
       id: 'env-dumper',
       name: 'Environment Dumper',
-      runtime: 'shell',
-      entry: 'dump.sh',
+      runtime: 'nodejs',
+      entry: 'dump-env.mjs',
     };
     writeFileSync(
       join(moduleDir, 'module.json'),
@@ -259,31 +261,19 @@ rl.on('close', () => {
       'utf-8',
     );
 
-    // dump.sh — dumps all env vars to a JSON file using node
-    const dumpScript = `#!/bin/sh
-node -e "
-const fs = require('fs');
-const output = JSON.stringify(process.env, null, 2);
-fs.writeFileSync('${outputPath.replace(/'/g, "\\'")}', output);
-"
+    // dump-env.mjs — dumps all env vars to a JSON file
+    const dumpScript = `
+import { writeFileSync } from 'node:fs';
+writeFileSync(${JSON.stringify(outputPath)}, JSON.stringify(process.env, null, 2));
 `;
-    writeFileSync(join(moduleDir, 'dump.sh'), dumpScript, 'utf-8');
-    chmodSync(join(moduleDir, 'dump.sh'), 0o755);
+    writeFileSync(join(moduleDir, 'dump-env.mjs'), dumpScript, 'utf-8');
 
-    // Spawn using the shell integration runner
-    const result = spawnSync(
-      'node',
-      ['--import', 'tsx/esm', SHELL_RUNNER, 'run', 'env-dumper'],
-      {
-        env: {
-          ...process.env,
-          MCPX_ROOT: root,
-        },
-        timeout: SPAWN_TIMEOUT,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        maxBuffer: 10 * 1024 * 1024,
-      },
-    );
+    const result = spawnSync('node', [MCPX_BIN, 'run', 'env-dumper'], {
+      env: { ...process.env, MCPX_ROOT: root },
+      timeout: SPAWN_TIMEOUT,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      maxBuffer: 10 * 1024 * 1024,
+    });
 
     // Process should exit successfully
     expect(result.status).toBe(0);
@@ -310,8 +300,7 @@ fs.writeFileSync('${outputPath.replace(/'/g, "\\'")}', output);
   it('arguments reach the module in correct order: manifest args then CLI args', () => {
     const { root, modulesDir } = createModuleRoot();
 
-    // Create the arg-printer module (shell runtime, since python may not be available)
-    // Using shell to avoid python dependency issues in CI
+    // Create the arg-printer module (nodejs runtime; cross-platform)
     const moduleDir = join(modulesDir, 'arg-printer');
     mkdirSync(moduleDir, { recursive: true });
 
@@ -323,8 +312,8 @@ fs.writeFileSync('${outputPath.replace(/'/g, "\\'")}', output);
     const manifest = {
       id: 'arg-printer',
       name: 'Argument Printer',
-      runtime: 'shell',
-      entry: 'print-args.sh',
+      runtime: 'nodejs',
+      entry: 'print-args.mjs',
       args: ['--mode', 'production'],
     };
     writeFileSync(
@@ -333,33 +322,20 @@ fs.writeFileSync('${outputPath.replace(/'/g, "\\'")}', output);
       'utf-8',
     );
 
-    // print-args.sh — writes received args as JSON array to output file
-    // Uses node to produce proper JSON from shell args
-    const printArgsScript = `#!/bin/sh
-# Collect all arguments into a JSON array using node
-node -e "
-const fs = require('fs');
-const args = process.argv.slice(1);
-fs.writeFileSync('${outputPath.replace(/'/g, "\\'")}', JSON.stringify(args, null, 2));
-" -- "$@"
+    // print-args.mjs — writes received args as JSON array to output file
+    const printArgsScript = `
+import { writeFileSync } from 'node:fs';
+writeFileSync(${JSON.stringify(outputPath)}, JSON.stringify(process.argv.slice(2), null, 2));
 `;
-    writeFileSync(join(moduleDir, 'print-args.sh'), printArgsScript, 'utf-8');
-    chmodSync(join(moduleDir, 'print-args.sh'), 0o755);
+    writeFileSync(join(moduleDir, 'print-args.mjs'), printArgsScript, 'utf-8');
 
     // Spawn with extra args after --
-    const result = spawnSync(
-      'node',
-      ['--import', 'tsx/esm', SHELL_RUNNER, 'run', 'arg-printer', '--', '--override', 'true'],
-      {
-        env: {
-          ...process.env,
-          MCPX_ROOT: root,
-        },
-        timeout: SPAWN_TIMEOUT,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        maxBuffer: 10 * 1024 * 1024,
-      },
-    );
+    const result = spawnSync('node', [MCPX_BIN, 'run', 'arg-printer', '--', '--override', 'true'], {
+      env: { ...process.env, MCPX_ROOT: root },
+      timeout: SPAWN_TIMEOUT,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      maxBuffer: 10 * 1024 * 1024,
+    });
 
     // Process should exit successfully
     expect(result.status).toBe(0);

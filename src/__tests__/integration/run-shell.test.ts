@@ -29,6 +29,7 @@ import { join, resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { tsxEsmNodeArgs } from '../helpers/tsx-node-args.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -145,7 +146,7 @@ function spawnShellRunner(
   }
 
   try {
-    const result = execFileSync('node', ['--import', 'tsx/esm', runnerScript, ...args], {
+    const result = execFileSync('node', [...tsxEsmNodeArgs(), runnerScript, ...args], {
       env: spawnEnv,
       timeout: 30_000,
       stdio: ['pipe', 'pipe', 'pipe'],

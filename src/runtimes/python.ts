@@ -17,6 +17,7 @@
 import { existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 import type { RuntimePlugin, RuntimeCheck, ExecDescriptor } from './plugin.js';
 import type { ResolvedModule } from '../core/manifest.js';
@@ -109,7 +110,13 @@ export class PythonPlugin implements RuntimePlugin {
         command: 'uv',
         args: ['run', entry, ...manifestArgs],
         cwd: moduleDir,
-        env: {},
+        // In restricted environments (CI sandboxes, locked-down home dirs),
+        // uv may fail when it cannot write to ~/.cache/uv. Point uv's cache/state
+        // to a writable location deterministically.
+        env: {
+          UV_CACHE_DIR: join(tmpdir(), 'mcpx-uv-cache'),
+          UV_STATE_DIR: join(tmpdir(), 'mcpx-uv-state'),
+        },
       };
     }
 

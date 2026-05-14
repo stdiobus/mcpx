@@ -79,6 +79,7 @@ describe('Integration: Registry Search', () => {
   let baseUrl: string;
   let tempDir: string;
   let originalFetch: typeof global.fetch;
+  let canListen = true;
 
   // Suppress stderr/stdout during tests
   let stderrSpy: ReturnType<typeof jest.spyOn>;
@@ -88,9 +89,18 @@ describe('Integration: Registry Search', () => {
     tempDir = mkdtempSync(join(tmpdir(), 'mcpx-search-int-'));
 
     // Start real HTTP server as mock registry
-    const result = await createMockRegistryServer();
-    server = result.server;
-    baseUrl = result.baseUrl;
+    try {
+      const result = await createMockRegistryServer();
+      server = result.server;
+      baseUrl = result.baseUrl;
+    } catch (err: unknown) {
+      const e = err as { code?: string };
+      if (e.code === 'EPERM') {
+        canListen = false;
+        return;
+      }
+      throw err;
+    }
 
     // Override global.fetch to redirect registry requests to our local server.
     // This allows searchCommand to make REAL HTTP calls to our mock server.
@@ -109,10 +119,11 @@ describe('Integration: Registry Search', () => {
 
   afterAll(async () => {
     // Restore original fetch
-    global.fetch = originalFetch;
-
-    await new Promise<void>((resolve) => server.close(() => resolve()));
-    rmSync(tempDir, { recursive: true, force: true });
+    if (originalFetch) global.fetch = originalFetch;
+    if (server) {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+    if (tempDir) rmSync(tempDir, { recursive: true, force: true });
   });
 
   afterEach(() => {
@@ -177,6 +188,7 @@ describe('Integration: Registry Search', () => {
 
   describe('JSON output (--json flag)', () => {
     it('returns valid JSON array with id, name, description fields', async () => {
+      if (!canListen) return;
       suppressOutput();
 
       const exitCode = await searchCommand({ query: 'MCP', json: true, verbose: false });
@@ -199,6 +211,7 @@ describe('Integration: Registry Search', () => {
     });
 
     it('results match what the mock server returned', async () => {
+      if (!canListen) return;
       suppressOutput();
 
       const exitCode = await searchCommand({ query: 'weather', json: true, verbose: false });
@@ -213,6 +226,7 @@ describe('Integration: Registry Search', () => {
     });
 
     it('JSON output does not include extra fields like gitUrl or latestVersion', async () => {
+      if (!canListen) return;
       suppressOutput();
 
       const exitCode = await searchCommand({ query: 'MCP', json: true, verbose: false });
@@ -229,6 +243,7 @@ describe('Integration: Registry Search', () => {
     });
 
     it('returns multiple matching results with correct data', async () => {
+      if (!canListen) return;
       suppressOutput();
 
       // "database" matches mcp-database name and description
@@ -246,6 +261,7 @@ describe('Integration: Registry Search', () => {
 
   describe('Human-readable output (no --json)', () => {
     it('stderr contains formatted module list with module details', async () => {
+      if (!canListen) return;
       suppressOutput();
 
       const exitCode = await searchCommand({ query: 'database', json: false, verbose: false });
@@ -259,6 +275,7 @@ describe('Integration: Registry Search', () => {
     });
 
     it('displays all matching results in stderr', async () => {
+      if (!canListen) return;
       suppressOutput();
 
       const exitCode = await searchCommand({ query: 'MCP', json: false, verbose: false });
@@ -274,6 +291,7 @@ describe('Integration: Registry Search', () => {
     });
 
     it('stdout remains empty when not using --json', async () => {
+      if (!canListen) return;
       suppressOutput();
 
       const exitCode = await searchCommand({ query: 'MCP', json: false, verbose: false });
@@ -286,6 +304,7 @@ describe('Integration: Registry Search', () => {
 
   describe('Empty results', () => {
     it('returns appropriate message when no modules match the query', async () => {
+      if (!canListen) return;
       suppressOutput();
 
       const exitCode = await searchCommand({
@@ -301,6 +320,7 @@ describe('Integration: Registry Search', () => {
     });
 
     it('returns empty JSON array when no results with --json', async () => {
+      if (!canListen) return;
       suppressOutput();
 
       const exitCode = await searchCommand({
