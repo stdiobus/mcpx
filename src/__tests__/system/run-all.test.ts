@@ -2,7 +2,7 @@
  * System meta-test: Build and test infrastructure verification.
  *
  * This test verifies the entire build and test infrastructure works correctly:
- * - Build verification: `npm run build` exits 0
+ * - Build verification: build pipeline exits 0
  * - Test suite execution: unit tests pass
  * - Integration test execution: integration tests complete
  * - Timing report: logs execution time per test category
@@ -31,6 +31,7 @@ const MCPX_ROOT = findPackageRoot(__dirname);
 
 /** Timeout for build/test commands (5 minutes). */
 const COMMAND_TIMEOUT = 300_000;
+const ROOT_EXEC = process.execPath;
 
 function rootDiag(): string {
   return `MCPX_ROOT=${MCPX_ROOT} cwd=${process.cwd()} __dirname=${__dirname}`;
@@ -65,9 +66,12 @@ function runTimed(
     shell: false,
   });
 
+  if (result.error) {
+    stderr = `${stderr}${stderr ? '\n' : ''}[spawn error] ${result.error.message}`;
+  }
   exitCode = result.status ?? 1;
   stdout = result.stdout?.toString('utf-8') ?? '';
-  stderr = result.stderr?.toString('utf-8') ?? '';
+  stderr = `${stderr}${stderr && result.stderr ? '\n' : ''}${result.stderr?.toString('utf-8') ?? ''}`.trim();
 
   const durationMs = Date.now() - start;
   return { label, exitCode, durationMs, stdout, stderr };
@@ -86,6 +90,66 @@ function buildJestArgs(testPathPattern: string, ignorePatterns: string[] = []): 
   }
 
   return args;
+}
+
+function runBuildPipeline(): { exitCode: number; stdout: string; stderr: string; durationMs: number } {
+  const start = Date.now();
+  const steps: Array<{ label: string; command: string; args: string[] }> = [
+    {
+      label: 'Build clean',
+      command: ROOT_EXEC,
+      args: [
+        '-e',
+        "require('node:fs').rmSync('out',{recursive:true,force:true})",
+      ],
+    },
+    {
+      label: 'Build bundle',
+      command: ROOT_EXEC,
+      args: ['scripts/run-esbuild.mjs'],
+    },
+    {
+      label: 'Build types',
+      command: ROOT_EXEC,
+      args: ['./node_modules/typescript/bin/tsc', '--project', 'tsconfig.build.json'],
+    },
+  ];
+
+  let stdout = '';
+  let stderr = '';
+
+  for (const step of steps) {
+    const result = spawnSync(step.command, step.args, {
+      cwd: MCPX_ROOT,
+      timeout: COMMAND_TIMEOUT,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      maxBuffer: 10 * 1024 * 1024,
+      shell: false,
+    });
+
+    stdout += result.stdout?.toString('utf-8') ?? '';
+    stderr += result.stderr?.toString('utf-8') ?? '';
+
+    if (result.error) {
+      stderr += `${stderr ? '\n' : ''}[${step.label}] spawn error: ${result.error.message}\n`;
+    }
+
+    if ((result.status ?? 1) !== 0) {
+      return {
+        exitCode: result.status ?? 1,
+        stdout,
+        stderr,
+        durationMs: Date.now() - start,
+      };
+    }
+  }
+
+  return {
+    exitCode: 0,
+    stdout,
+    stderr,
+    durationMs: Date.now() - start,
+  };
 }
 
 function integrationIgnorePatterns(): string[] {
@@ -142,15 +206,19 @@ describe('System: Build and Test Infrastructure', () => {
   });
 
   describe('Build verification', () => {
-    it('npm run build exits with code 0', () => {
-      const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-      const result = runTimed(npmCommand, ['run', 'build'], 'Build (tsc)');
+    it('build pipeline exits with code 0', () => {
+      const result = runBuildPipeline();
       timingReport.push({
-        label: result.label,
+        label: 'Build (tsc)',
         durationMs: result.durationMs,
         passed: result.exitCode === 0,
       });
 
+      if (result.exitCode !== 0) {
+        console.error(rootDiag());
+        console.error('Build stdout:', result.stdout.slice(0, 2000));
+        console.error('Build stderr:', result.stderr.slice(0, 2000));
+      }
       expect(result.exitCode).toBe(0);
     });
 
