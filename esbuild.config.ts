@@ -18,12 +18,17 @@
 
 import { build, type BuildOptions, context } from 'esbuild';
 import { rmSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const SRC_DIR = resolve(import.meta.dirname, 'src');
-const OUT_DIR = resolve(import.meta.dirname, 'out', 'dist');
+// NOTE: `import.meta.dirname` is not available across all supported Node versions.
+// Use a stable ESM equivalent.
+const THIS_DIR = dirname(fileURLToPath(import.meta.url));
+
+const SRC_DIR = resolve(THIS_DIR, 'src');
+const OUT_DIR = resolve(THIS_DIR, 'out', 'dist');
 const IS_WATCH = process.argv.includes('--watch');
 
 /**
@@ -140,7 +145,7 @@ const cliBuild: BuildOptions = {
 // ─── Build Execution ─────────────────────────────────────────────────────────
 
 async function cleanDist(): Promise<void> {
-  const outRoot = resolve(import.meta.dirname, 'out');
+  const outRoot = resolve(THIS_DIR, 'out');
   if (existsSync(outRoot)) {
     rmSync(outRoot, { recursive: true, force: true });
   }
