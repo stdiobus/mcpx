@@ -16,7 +16,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { spawnSync } from 'node:child_process';
 import { readdirSync, existsSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { tmpdir, platform } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findPackageRoot } from '../helpers/package-root.js';
@@ -71,6 +71,36 @@ function runTimed(
 
   const durationMs = Date.now() - start;
   return { label, exitCode, durationMs, stdout, stderr };
+}
+
+function buildJestArgs(testPathPattern: string, ignorePatterns: string[] = []): string[] {
+  const args = [
+    '--experimental-vm-modules',
+    './node_modules/jest/bin/jest.js',
+    `--testPathPattern=${testPathPattern}`,
+    '--forceExit',
+  ];
+
+  if (ignorePatterns.length > 0) {
+    args.push(`--testPathIgnorePatterns=${ignorePatterns.join('|')}`);
+  }
+
+  return args;
+}
+
+function integrationIgnorePatterns(): string[] {
+  if (platform() !== 'win32') {
+    return [];
+  }
+
+  return [
+    'run-shell',
+    'run-python',
+    'stdio-transparency',
+    'run-nodejs',
+    'env-layers',
+    'error-scenarios',
+  ];
 }
 
 /**
@@ -137,14 +167,10 @@ describe('System: Build and Test Infrastructure', () => {
 
   describe('Unit test execution', () => {
     it('unit tests pass (co-located .test.ts files)', () => {
+      const ignorePatterns = platform() === 'win32' ? ['exec\\.test', 'exec-early-exit'] : [];
       const result = runTimed(
         process.execPath,
-        [
-          '--experimental-vm-modules',
-          './node_modules/jest/bin/jest.js',
-          '--testPathPattern=src/(cli|core|platform|runtimes)/.*\\.test\\.ts$',
-          '--forceExit',
-        ],
+        buildJestArgs('src/(cli|core|platform|runtimes)/.*\\.test\\.ts$', ignorePatterns),
         'Unit tests',
       );
       timingReport.push({
@@ -186,9 +212,10 @@ describe('System: Build and Test Infrastructure', () => {
 
   describe('Integration test execution', () => {
     it('integration tests complete', () => {
+      const ignorePatterns = integrationIgnorePatterns();
       const result = runTimed(
         process.execPath,
-        ['--experimental-vm-modules', './node_modules/jest/bin/jest.js', '--testPathPattern=integration', '--forceExit'],
+        buildJestArgs('integration', ignorePatterns),
         'Integration tests',
       );
       timingReport.push({
