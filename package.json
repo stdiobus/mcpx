@@ -24,9 +24,9 @@
   "scripts": {
     "build": "npm run build:clean && npm run build:bundle && npm run build:types",
     "build:clean": "node -e \"require('node:fs').rmSync('out',{recursive:true,force:true})\"",
-    "build:bundle": "node --import tsx/esm esbuild.config.ts",
+    "build:bundle": "node scripts/run-esbuild.mjs",
     "build:types": "tsc --project tsconfig.build.json",
-    "build:watch": "node --import tsx/esm esbuild.config.ts --watch",
+    "build:watch": "node scripts/run-esbuild.mjs --watch",
     "prebuild": "npm run typecheck",
     "typecheck": "tsc --noEmit",
     "pretest": "npm run build",

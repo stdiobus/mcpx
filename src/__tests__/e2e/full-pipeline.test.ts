@@ -30,6 +30,7 @@ import { join, resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { tsxEsmNodeArgs } from '../helpers/tsx-node-args.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -180,7 +181,7 @@ rl.on('close', () => {
 
     const result = spawnSync(
       'node',
-      ['--import', 'tsx/esm', MCPX_RUN_MODULE, 'echo-server'],
+      [...tsxEsmNodeArgs(), MCPX_RUN_MODULE, 'echo-server'],
       {
         input: Buffer.from(jsonRpcRequest, 'utf-8'),
         env: {

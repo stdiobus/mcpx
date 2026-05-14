@@ -22,6 +22,7 @@ import { join, resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { tsxEsmNodeArgs } from '../helpers/tsx-node-args.js';
 
 // --- Test Runner Helper ---
 
@@ -57,7 +58,7 @@ function spawnMcpxRunner(
   }
 
   try {
-    const result = execFileSync('node', ['--import', 'tsx/esm', MCPX_RUNNER, ...args], {
+    const result = execFileSync('node', [...tsxEsmNodeArgs(), MCPX_RUNNER, ...args], {
       env: spawnEnv,
       timeout: 15_000,
       stdio: ['pipe', 'pipe', 'pipe'],

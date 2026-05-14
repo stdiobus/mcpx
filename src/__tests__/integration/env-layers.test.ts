@@ -32,6 +32,7 @@ import { join, resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { tsxEsmNodeArgs } from '../helpers/tsx-node-args.js';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -70,7 +71,7 @@ function spawnEnvRunner(
   }
 
   try {
-    const result = execFileSync('node', ['--import', 'tsx/esm', ENV_LAYERS_RUNNER, moduleId], {
+    const result = execFileSync('node', [...tsxEsmNodeArgs(), ENV_LAYERS_RUNNER, moduleId], {
       env: spawnEnv,
       timeout: SPAWN_TIMEOUT,
       stdio: ['pipe', 'pipe', 'pipe'],

@@ -17,6 +17,7 @@ import { tmpdir } from 'node:os';
 import { randomBytes } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { tsxEsmNodeArgs } from '../helpers/tsx-node-args.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -76,7 +77,7 @@ function spawnMcpxWithPayload(payload: Buffer): {
   stderr: Buffer;
   exitCode: number | null;
 } {
-  const result = spawnSync('node', ['--import', 'tsx/esm', STDIO_RUNNER, 'stdio-cat'], {
+  const result = spawnSync('node', [...tsxEsmNodeArgs(), STDIO_RUNNER, 'stdio-cat'], {
     input: payload,
     env: {
       ...process.env,

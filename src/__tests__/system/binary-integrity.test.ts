@@ -16,6 +16,7 @@ import { existsSync, readFileSync, statSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { tsxEsmNodeArgs } from '../helpers/tsx-node-args.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -111,7 +112,7 @@ describe('System: Binary Integrity', () => {
     it('node mcpx-runner.mjs run nonexistent exits non-zero with error on stderr', () => {
       // Use the mcpx-runner which exercises the real compiled CLI code paths
       const MCPX_RUNNER = resolve(__dirname, '../helpers/mcpx-runner.mjs');
-      const result = spawnNode(['--import', 'tsx/esm', MCPX_RUNNER, 'run', 'nonexistent-module-xyz'], {
+      const result = spawnNode([...tsxEsmNodeArgs(), MCPX_RUNNER, 'run', 'nonexistent-module-xyz'], {
         cwd: PACKAGE_ROOT,
       });
 
