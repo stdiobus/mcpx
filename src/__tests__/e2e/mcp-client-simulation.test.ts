@@ -44,6 +44,7 @@ const MCPX_RUN_MODULE = resolve(__dirname, '../helpers/mcpx-run-module.mjs');
 /**
  * Path to the compiled dist directory.
  */
+// __dirname is src/__tests__/e2e; go up to package root (mcpx/) then into out/dist.
 const DIST_ROOT = resolve(__dirname, '../../../out/dist');
 
 /**

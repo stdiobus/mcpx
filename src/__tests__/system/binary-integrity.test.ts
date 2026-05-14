@@ -74,7 +74,8 @@ describe('System: Binary Integrity', () => {
       expect(existsSync(BIN_MCPX)).toBe(true);
 
       const content = readFileSync(BIN_MCPX, 'utf-8');
-      const firstLine = content.split('\n')[0];
+      // On Windows checkouts, the file may have CRLF endings; normalize so the test is portable.
+      const firstLine = content.split('\n')[0].replace(/\r$/, '');
       expect(firstLine).toBe('#!/usr/bin/env node');
     });
 

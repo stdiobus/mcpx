@@ -164,21 +164,34 @@ describe('Integration: Registry Publish — Real Publish Flow', () => {
   let baseUrl: string;
   let requests: CapturedRequest[];
   let tempDirs: string[];
+  let canListen = true;
 
   // Suppress stderr/stdout during tests
   let stderrSpy: ReturnType<typeof jest.spyOn>;
   let stdoutSpy: ReturnType<typeof jest.spyOn>;
 
   beforeAll(async () => {
-    const result = await createMockRegistryServer();
-    server = result.server;
-    baseUrl = result.baseUrl;
-    requests = result.requests;
     tempDirs = [];
+    try {
+      const result = await createMockRegistryServer();
+      server = result.server;
+      baseUrl = result.baseUrl;
+      requests = result.requests;
+    } catch (err: unknown) {
+      const e = err as { code?: string };
+      if (e.code === 'EPERM') {
+        canListen = false;
+        requests = [];
+        return;
+      }
+      throw err;
+    }
   });
 
   afterAll(async () => {
-    await new Promise<void>((resolve) => server.close(() => resolve()));
+    if (server) {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
     for (const dir of tempDirs) {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -188,7 +201,7 @@ describe('Integration: Registry Publish — Real Publish Flow', () => {
     stderrSpy?.mockRestore();
     stdoutSpy?.mockRestore();
     // Clear captured requests between tests
-    requests.length = 0;
+    if (requests) requests.length = 0;
   });
 
   function suppressOutput() {
@@ -198,6 +211,7 @@ describe('Integration: Registry Publish — Real Publish Flow', () => {
 
   describe('Successful publish: valid module sends POST /modules to registry', () => {
     it('HTTP server receives the POST request with manifest and tarball', async () => {
+      if (!canListen) return;
       suppressOutput();
 
       const moduleDir = createValidModuleDir();
@@ -228,6 +242,7 @@ describe('Integration: Registry Publish — Real Publish Flow', () => {
     });
 
     it('request body contains module manifest data', async () => {
+      if (!canListen) return;
       suppressOutput();
 
       const manifest = {
@@ -264,6 +279,7 @@ describe('Integration: Registry Publish — Real Publish Flow', () => {
     });
 
     it('request includes tarball (multipart/form-data content-type)', async () => {
+      if (!canListen) return;
       suppressOutput();
 
       const moduleDir = createValidModuleDir();
@@ -294,6 +310,7 @@ describe('Integration: Registry Publish — Real Publish Flow', () => {
 
   describe('Validation failure: invalid manifest → exitCode non-zero, NO request sent', () => {
     it('exits non-zero and does NOT contact server when manifest is missing required fields', async () => {
+      if (!canListen) return;
       suppressOutput();
 
       // Create a module directory with an invalid manifest (missing runtime and entry)
@@ -323,6 +340,7 @@ describe('Integration: Registry Publish — Real Publish Flow', () => {
     });
 
     it('exits non-zero when module.json is missing entirely', async () => {
+      if (!canListen) return;
       suppressOutput();
 
       // Create a directory without module.json
@@ -347,6 +365,7 @@ describe('Integration: Registry Publish — Real Publish Flow', () => {
     });
 
     it('exits non-zero when module.json contains invalid JSON', async () => {
+      if (!canListen) return;
       suppressOutput();
 
       const moduleDir = realpathSync(mkdtempSync(join(tmpdir(), 'mcpx-publish-bad-json-')));

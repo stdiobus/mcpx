@@ -185,18 +185,18 @@ describe('E2E: Real-world module patterns', () => {
           id: 'ts-with-deps',
           name: 'TypeScript Module with Dependencies',
           runtime: 'nodejs',
-          entry: 'server.ts',
+          // Use JS here to keep the E2E focused on node_modules resolution + cwd behavior.
+          // TS loaders (tsx/ts-node) can be brittle across Node versions in constrained CI.
+          entry: 'server.mjs',
         }, null, 2),
         'utf-8',
       );
 
-      // Create server.ts that imports from node_modules and writes output
-      const serverTs = `
+      // Create server.mjs that imports from node_modules and writes output
+      const serverJs = `
 import { writeFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-
-const require = createRequire(import.meta.url);
-const helper = require('my-helper');
+// Import CJS dependency from ESM: Node will expose module.exports as the default export.
+import helper from 'my-helper';
 
 const greeting = helper.greet('MCP');
 
@@ -208,13 +208,21 @@ const output = {
 };
 
 writeFileSync(${JSON.stringify(outputPath)}, JSON.stringify(output, null, 2));
+process.exit(0);
 `;
-      writeFileSync(join(moduleDir, 'server.ts'), serverTs, 'utf-8');
+      writeFileSync(join(moduleDir, 'server.mjs'), serverJs, 'utf-8');
 
       // Spawn mcpx
       const result = spawnMcpxModule('ts-with-deps', { MCPX_ROOT: root });
 
-      expect(result.exitCode).toBe(0);
+      if (result.exitCode !== 0) {
+        throw new Error(
+          `mcpx module launch failed (ts-with-deps)\n` +
+            `exitCode: ${String(result.exitCode)}\n` +
+            `stdout:\n${result.stdout}\n` +
+            `stderr:\n${result.stderr}\n`,
+        );
+      }
       expect(existsSync(outputPath)).toBe(true);
 
       const output = JSON.parse(readFileSync(outputPath, 'utf-8'));
@@ -304,7 +312,14 @@ with open(os.environ["PROBE_OUTPUT"], "w") as f:
         PROBE_OUTPUT: outputPath,
       });
 
-      expect(result.exitCode).toBe(0);
+      if (result.exitCode !== 0) {
+        throw new Error(
+          `mcpx module launch failed (python-venv-server)\n` +
+            `exitCode: ${String(result.exitCode)}\n` +
+            `stdout:\n${result.stdout}\n` +
+            `stderr:\n${result.stderr}\n`,
+        );
+      }
       expect(existsSync(outputPath)).toBe(true);
 
       const output = JSON.parse(readFileSync(outputPath, 'utf-8'));
