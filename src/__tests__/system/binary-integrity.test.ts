@@ -15,7 +15,7 @@ import { describe, it, expect } from '@jest/globals';
 import { existsSync, readFileSync, statSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -136,10 +136,10 @@ describe('System: Binary Integrity', () => {
   describe('No runtime errors on import', () => {
     it('node -e "await import(dist/index.js)" exits 0', () => {
       // ESM import of the dist entry point should succeed without errors
-      const importPath = DIST_INDEX;
+      const importPath = pathToFileURL(DIST_INDEX).href;
       // Use dynamic import since the package is ESM (type: "module")
       const result = spawnNode(
-        ['--input-type=module', '-e', `await import('${importPath.replace(/\\/g, '/')}');`],
+        ['--input-type=module', '-e', `await import('${importPath}');`],
         { cwd: PACKAGE_ROOT },
       );
 
@@ -154,7 +154,7 @@ describe('System: Binary Integrity', () => {
       ];
 
       for (const modulePath of modules) {
-        const safePath = modulePath.replace(/\\/g, '/');
+        const safePath = pathToFileURL(modulePath).href;
         const result = spawnNode(
           ['--input-type=module', '-e', `await import('${safePath}');`],
           { cwd: PACKAGE_ROOT },

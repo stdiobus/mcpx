@@ -139,7 +139,7 @@ describe('System: Build and Test Infrastructure', () => {
   describe('Unit test execution', () => {
     it('unit tests pass (co-located .test.ts files)', () => {
       const result = runTimed(
-        "NODE_OPTIONS='--experimental-vm-modules' npx jest --testPathPattern='src/(cli|core|platform|runtimes)/.*\\.test\\.ts$' --forceExit",
+        'node --experimental-vm-modules ./node_modules/jest/bin/jest.js --testPathPattern="src/(cli|core|platform|runtimes)/.*\\\\.test\\\\.ts$" --forceExit',
         'Unit tests',
       );
       timingReport.push({
@@ -158,7 +158,7 @@ describe('System: Build and Test Infrastructure', () => {
   describe('Property-based test execution', () => {
     it('property tests pass', () => {
       const result = runTimed(
-        "NODE_OPTIONS='--experimental-vm-modules' npx jest --testPathPattern=properties --forceExit",
+        'node --experimental-vm-modules ./node_modules/jest/bin/jest.js --testPathPattern=properties --forceExit',
         'Property tests',
       );
       timingReport.push({
@@ -177,7 +177,7 @@ describe('System: Build and Test Infrastructure', () => {
   describe('Integration test execution', () => {
     it('integration tests complete', () => {
       const result = runTimed(
-        "NODE_OPTIONS='--experimental-vm-modules' npx jest --testPathPattern=integration --forceExit",
+        'node --experimental-vm-modules ./node_modules/jest/bin/jest.js --testPathPattern=integration --forceExit',
         'Integration tests',
       );
       timingReport.push({
@@ -196,7 +196,7 @@ describe('System: Build and Test Infrastructure', () => {
   describe('E2E test execution', () => {
     it('e2e tests complete', () => {
       const result = runTimed(
-        "NODE_OPTIONS='--experimental-vm-modules' npx jest --testPathPattern=e2e --forceExit",
+        'node --experimental-vm-modules ./node_modules/jest/bin/jest.js --testPathPattern=e2e --forceExit',
         'E2E tests',
       );
       timingReport.push({
