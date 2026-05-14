@@ -14,7 +14,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
-import { execSync, ExecSyncOptionsWithBufferEncoding } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { readdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
@@ -32,15 +32,6 @@ const MCPX_ROOT = findPackageRoot(__dirname);
 /** Timeout for build/test commands (5 minutes). */
 const COMMAND_TIMEOUT = 300_000;
 
-/** Common exec options. */
-const EXEC_OPTIONS: ExecSyncOptionsWithBufferEncoding = {
-  cwd: MCPX_ROOT,
-  timeout: COMMAND_TIMEOUT,
-  stdio: ['pipe', 'pipe', 'pipe'],
-  maxBuffer: 10 * 1024 * 1024, // 10MB buffer for test output
-  encoding: 'buffer',
-};
-
 function rootDiag(): string {
   return `MCPX_ROOT=${MCPX_ROOT} cwd=${process.cwd()} __dirname=${__dirname}`;
 }
@@ -50,7 +41,11 @@ function rootDiag(): string {
 /**
  * Runs a command and returns timing + result info.
  */
-function runTimed(command: string, label: string): {
+function runTimed(
+  command: string,
+  args: string[],
+  label: string,
+): {
   label: string;
   exitCode: number;
   durationMs: number;
@@ -62,19 +57,17 @@ function runTimed(command: string, label: string): {
   let stdout = '';
   let stderr = '';
 
-  try {
-    const result = execSync(command, EXEC_OPTIONS);
-    stdout = (result as Buffer).toString('utf-8');
-  } catch (error: unknown) {
-    const execError = error as {
-      stdout?: Buffer;
-      stderr?: Buffer;
-      status?: number | null;
-    };
-    exitCode = execError.status ?? 1;
-    stdout = execError.stdout?.toString('utf-8') ?? '';
-    stderr = execError.stderr?.toString('utf-8') ?? '';
-  }
+  const result = spawnSync(command, args, {
+    cwd: MCPX_ROOT,
+    timeout: COMMAND_TIMEOUT,
+    stdio: ['pipe', 'pipe', 'pipe'],
+    maxBuffer: 10 * 1024 * 1024, // 10MB buffer for test output
+    shell: false,
+  });
+
+  exitCode = result.status ?? 1;
+  stdout = result.stdout?.toString('utf-8') ?? '';
+  stderr = result.stderr?.toString('utf-8') ?? '';
 
   const durationMs = Date.now() - start;
   return { label, exitCode, durationMs, stdout, stderr };
@@ -120,7 +113,8 @@ describe('System: Build and Test Infrastructure', () => {
 
   describe('Build verification', () => {
     it('npm run build exits with code 0', () => {
-      const result = runTimed('npm run build', 'Build (tsc)');
+      const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+      const result = runTimed(npmCommand, ['run', 'build'], 'Build (tsc)');
       timingReport.push({
         label: result.label,
         durationMs: result.durationMs,
@@ -144,7 +138,13 @@ describe('System: Build and Test Infrastructure', () => {
   describe('Unit test execution', () => {
     it('unit tests pass (co-located .test.ts files)', () => {
       const result = runTimed(
-        'node --experimental-vm-modules ./node_modules/jest/bin/jest.js --testPathPattern="src/(cli|core|platform|runtimes)/.*\\\\.test\\\\.ts$" --forceExit',
+        process.execPath,
+        [
+          '--experimental-vm-modules',
+          './node_modules/jest/bin/jest.js',
+          '--testPathPattern=src/(cli|core|platform|runtimes)/.*\\.test\\.ts$',
+          '--forceExit',
+        ],
         'Unit tests',
       );
       timingReport.push({
@@ -155,6 +155,7 @@ describe('System: Build and Test Infrastructure', () => {
 
       if (result.exitCode !== 0) {
         console.error(rootDiag());
+        console.error('Unit test stdout:', result.stdout.slice(0, 2000));
         console.error('Unit test stderr:', result.stderr.slice(0, 2000));
       }
       expect(result.exitCode).toBe(0);
@@ -164,7 +165,8 @@ describe('System: Build and Test Infrastructure', () => {
   describe('Property-based test execution', () => {
     it('property tests pass', () => {
       const result = runTimed(
-        'node --experimental-vm-modules ./node_modules/jest/bin/jest.js --testPathPattern=properties --forceExit',
+        process.execPath,
+        ['--experimental-vm-modules', './node_modules/jest/bin/jest.js', '--testPathPattern=properties', '--forceExit'],
         'Property tests',
       );
       timingReport.push({
@@ -175,6 +177,7 @@ describe('System: Build and Test Infrastructure', () => {
 
       if (result.exitCode !== 0) {
         console.error(rootDiag());
+        console.error('Property test stdout:', result.stdout.slice(0, 2000));
         console.error('Property test stderr:', result.stderr.slice(0, 2000));
       }
       expect(result.exitCode).toBe(0);
@@ -184,7 +187,8 @@ describe('System: Build and Test Infrastructure', () => {
   describe('Integration test execution', () => {
     it('integration tests complete', () => {
       const result = runTimed(
-        'node --experimental-vm-modules ./node_modules/jest/bin/jest.js --testPathPattern=integration --forceExit',
+        process.execPath,
+        ['--experimental-vm-modules', './node_modules/jest/bin/jest.js', '--testPathPattern=integration', '--forceExit'],
         'Integration tests',
       );
       timingReport.push({
@@ -195,6 +199,7 @@ describe('System: Build and Test Infrastructure', () => {
 
       if (result.exitCode !== 0) {
         console.error(rootDiag());
+        console.error('Integration test stdout:', result.stdout.slice(0, 2000));
         console.error('Integration test stderr:', result.stderr.slice(0, 2000));
       }
       expect(result.exitCode).toBe(0);
@@ -204,7 +209,8 @@ describe('System: Build and Test Infrastructure', () => {
   describe('E2E test execution', () => {
     it('e2e tests complete', () => {
       const result = runTimed(
-        'node --experimental-vm-modules ./node_modules/jest/bin/jest.js --testPathPattern=e2e --forceExit',
+        process.execPath,
+        ['--experimental-vm-modules', './node_modules/jest/bin/jest.js', '--testPathPattern=e2e', '--forceExit'],
         'E2E tests',
       );
       timingReport.push({
@@ -215,6 +221,7 @@ describe('System: Build and Test Infrastructure', () => {
 
       if (result.exitCode !== 0) {
         console.error(rootDiag());
+        console.error('E2E test stdout:', result.stdout.slice(0, 2000));
         console.error('E2E test stderr:', result.stderr.slice(0, 2000));
       }
       expect(result.exitCode).toBe(0);
