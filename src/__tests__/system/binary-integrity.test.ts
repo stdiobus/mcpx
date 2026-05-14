@@ -11,10 +11,10 @@
  * @module __tests__/system/binary-integrity
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeAll } from '@jest/globals';
 import { existsSync, readFileSync, statSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, execSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { tsxEsmNodeArgs } from '../helpers/tsx-node-args.js';
 import { findPackageRoot } from '../helpers/package-root.js';
@@ -86,6 +86,18 @@ function spawnNode(
 }
 
 describe('System: Binary Integrity', () => {
+  beforeAll(() => {
+    // Some CI jobs invoke Jest directly (not via `npm test`), which bypasses `pretest`
+    // and can leave out/ missing. Make this suite self-contained.
+    if (!existsSync(DIST_DIR)) {
+      execSync('npm run build', {
+        cwd: PACKAGE_ROOT,
+        stdio: 'pipe',
+        timeout: 300_000,
+      });
+    }
+  }, 300_000);
+
   describe('Package structure', () => {
     it('bin/mcpx exists and has shebang #!/usr/bin/env node', () => {
       if (!existsSync(BIN_MCPX)) {
