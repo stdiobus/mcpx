@@ -41,7 +41,7 @@ const PACKAGE_ROOT = resolve(__dirname, '../../..');
 const DIST_DIR = resolve(PACKAGE_ROOT, 'out/dist');
 
 /** Expected tarball filename based on package.json name and version */
-const TARBALL_NAME = 'stdiobus-mcpx-0.1.0.tgz';
+const TARBALL_NAME = `stdiobus-mcpx-${process.env.npm_package_version}.tgz`;
 
 /** Timeout for individual tests (npm install can be slow) */
 const TEST_TIMEOUT = 60_000;
@@ -262,14 +262,20 @@ main();
 const describeFn = distExists ? describe : describe.skip;
 
 describeFn('System: npm pack + install (real tarball)', () => {
-  let cliRunner: string;
+  let npmCacheDir: string;
 
   beforeAll(() => {
     // Create a clean temp directory for the entire suite
     tempDir = realpathSync(mkdtempSync(join(tmpdir(), 'mcpx-npm-pack-')));
+    // In some environments $HOME/.npm may be non-writable; force npm cache/logs into our temp dir.
+    npmCacheDir = join(tempDir, 'npm-cache');
+    mkdirSync(npmCacheDir, { recursive: true });
 
     // Step 1: Run npm pack in packages/mcpx/
-    const packResult = run('npm', ['pack'], { cwd: PACKAGE_ROOT });
+    const packResult = run('npm', ['pack'], {
+      cwd: PACKAGE_ROOT,
+      env: { NPM_CONFIG_CACHE: npmCacheDir },
+    });
     expect(packResult.exitCode).toBe(0);
 
     // The tarball is created in the cwd (PACKAGE_ROOT)
@@ -286,7 +292,10 @@ describeFn('System: npm pack + install (real tarball)', () => {
     );
 
     // Step 3: Install the tarball in the consumer directory
-    const installResult = run('npm', ['install', tarballPath], { cwd: consumerDir });
+    const installResult = run('npm', ['install', tarballPath], {
+      cwd: consumerDir,
+      env: { NPM_CONFIG_CACHE: npmCacheDir },
+    });
     expect(installResult.exitCode).toBe(0);
 
     // Step 4: Verify bin shim exists
@@ -300,12 +309,13 @@ describeFn('System: npm pack + install (real tarball)', () => {
       expect(stat.mode & 0o111).toBeGreaterThan(0);
     }
 
-    // Set up the installed package dist path
-    packageDistDir = join(consumerDir, 'node_modules', '@stdiobus', 'mcpx', 'dist');
+    // Set up the installed package dist path (package ships `out/`, not top-level `dist/`)
+    packageDistDir = join(consumerDir, 'node_modules', '@stdiobus', 'mcpx', 'out', 'dist');
+    console.log('packageDistDir: ', packageDistDir);
     expect(existsSync(packageDistDir)).toBe(true);
 
-    // Create a CLI runner that imports from the installed package
-    cliRunner = createCliRunner(consumerDir, packageDistDir);
+    // We intentionally exercise the installed package via its public CLI (`node_modules/.bin/mcpx`),
+    // not via internal imports, because the published bundle is a single-file dist.
   }, TEST_TIMEOUT);
 
   afterAll(() => {
@@ -327,19 +337,16 @@ describeFn('System: npm pack + install (real tarball)', () => {
         const binResult = run(mcpxBin, ['--help'], { cwd: consumerDir });
         expect(binResult.exitCode).toBe(0);
 
-        // The CLI runner (using installed dist/ modules) should produce help
-        const result = run('node', [cliRunner, '--help'], { cwd: consumerDir });
-        expect(result.exitCode).toBe(0);
-        expect(result.stderr).toContain('Usage');
+        expect(binResult.stderr).toContain('Usage');
 
         // Verify all commands are listed
         const expectedCommands = ['run', 'list', 'doctor', 'env', 'install', 'publish', 'upgrade', 'search'];
         for (const cmd of expectedCommands) {
-          expect(result.stderr).toContain(cmd);
+          expect(binResult.stderr).toContain(cmd);
         }
 
         // stdout must be empty (no stdout leakage)
-        expect(result.stdout).toBe('');
+        expect(binResult.stdout).toBe('');
       },
       TEST_TIMEOUT,
     );
@@ -371,7 +378,7 @@ describeFn('System: npm pack + install (real tarball)', () => {
         );
         writeFileSync(join(moduleDir, 'index.mjs'), 'process.exit(0);\n', 'utf-8');
 
-        const result = run('node', [cliRunner, 'list', '--json'], {
+        const result = run(mcpxBin, ['list', '--json'], {
           cwd: consumerDir,
           env: { MCPX_ROOT: moduleRoot },
         });
@@ -444,7 +451,7 @@ writeFileSync(${JSON.stringify(outputPath)}, JSON.stringify(output, null, 2));
         writeFileSync(envPath, 'PROBE_SECRET=secret-from-env\n', 'utf-8');
         chmodSync(envPath, 0o600);
 
-        const result = run('node', [cliRunner, 'run', 'probe-module'], {
+        const result = run(mcpxBin, ['run', 'probe-module'], {
           cwd: consumerDir,
           env: { MCPX_ROOT: moduleRoot },
         });
@@ -513,7 +520,7 @@ writeFileSync(${JSON.stringify(outputPath)}, JSON.stringify(output, null, 2));
           'utf-8',
         );
 
-        const result = run('node', [cliRunner, 'doctor', '--json'], {
+        const result = run(mcpxBin, ['doctor', '--json'], {
           cwd: consumerDir,
           env: { MCPX_ROOT: moduleRoot },
         });
@@ -574,16 +581,15 @@ writeFileSync(${JSON.stringify(outputPath)}, JSON.stringify(output, null, 2));
 
     it('installed package contains all compiled dist/ modules', () => {
       const packageDir = join(consumerDir, 'node_modules', '@stdiobus', 'mcpx');
-      const distDir = join(packageDir, 'dist');
+      const distDir = join(packageDir, 'out', 'dist');
 
       expect(existsSync(distDir)).toBe(true);
 
       const entries = readdirSync(distDir);
-      expect(entries).toContain('cli');
-      expect(entries).toContain('core');
-      expect(entries).toContain('platform');
-      expect(entries).toContain('runtimes');
-      expect(entries).toContain('registry');
+      // The published artifact is a bundled dist (single-file CLI + entrypoints).
+      expect(entries).toContain('cli.js');
+      expect(entries).toContain('index.js');
+      expect(entries).toContain('index.cjs');
     });
 
     it('installed package does NOT contain src/ (source not shipped)', () => {
@@ -652,7 +658,7 @@ process.stdin.on('end', () => {
 
         const result = await new Promise<{ stdout: Buffer; stderr: Buffer; exitCode: number | null }>(
           (resolvePromise) => {
-            const child = spawnCb('node', [cliRunner, 'run', 'probe-module'], {
+            const child = spawnCb(mcpxBin, ['run', 'probe-module'], {
               stdio: ['pipe', 'pipe', 'pipe'],
               env: {
                 ...(process.env as Record<string, string>),
