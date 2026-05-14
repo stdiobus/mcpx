@@ -49,6 +49,11 @@ const MCPX_BIN = resolve(__dirname, '../../../bin/mcpx');
 const MCPX_RUNNER = resolve(__dirname, '../helpers/mcpx-runner.mjs');
 
 /**
+ * Absolute path to tsx ESM loader so `spawnRunner()` works even when cwd is outside the repo.
+ */
+const TSX_ESM_LOADER = resolve(__dirname, '../../../node_modules/tsx/dist/esm/index.mjs');
+
+/**
  * Path to the integration runner helper.
  */
 const INTEGRATION_RUNNER = resolve(__dirname, '../helpers/integration-runner.mjs');
@@ -111,7 +116,7 @@ function spawnRunner(
     }
   }
 
-  const result = spawnSync('node', ['--import', 'tsx/esm', MCPX_RUNNER, ...args], {
+  const result = spawnSync('node', ['--import', TSX_ESM_LOADER, MCPX_RUNNER, ...args], {
     env: spawnEnv,
     cwd: cwd || process.cwd(),
     timeout: SPAWN_TIMEOUT,
